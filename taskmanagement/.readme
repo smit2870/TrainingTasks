@@ -1,0 +1,39 @@
+# Trainee Management API
+
+This is a simple Trainee Management Web API developed using ASP.NET Core (.NET).
+
+## Technology Used
+
+### Backend
+- .NET 10.0
+- C#
+
+### API Tools
+- Swagger
+
+### Storage
+- In-Memory List (Temporary Data Storage)
+
+---
+
+## Features Completed
+
+- Health Check API
+- Add trainees
+- View all trainees
+- View trainee by ID
+- Swagger API testing interface
+
+---
+
+## API Endpoints
+
+### Health Check
+- GET `/api/health`
+
+### Trainee APIs
+- GET `/api/trainees` → Get all trainees  
+- GET `/api/trainees/{id}` → Get trainee by ID  
+- POST `/api/trainees` → Create new trainee  
+
+
