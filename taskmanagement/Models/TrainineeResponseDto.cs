@@ -4,18 +4,14 @@ namespace taskmanagement.Models
 {
     public class TraineeResponseDto
     {
-        [Required]
-        public string FirstName { get; set; }
+        public required string FirstName { get; set; }
 
-        [Required]
-        public string LastName { get; set; }
+        public required string LastName { get; set; }
     
-        [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public required string Email { get; set; }
 
-        [Required]
-        public string TechStack { get; set; }
+        public required string TechStack { get; set; }
 
         [Required]
         public TraineeStatus? Status { get; set; }
