@@ -15,19 +15,19 @@ namespace taskmanagement.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
-            var data = _service.GetAll().ToList();
-            // var data = _service.GetAll()
-            //     .Select(t => _service.MapToDto(t));
+            var data = await _service.GetAll(search);
+
+            // var result = data.Select(t => _service.MapToDto(t));
 
             return Ok(data);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var trainee = _service.GetById(id);
+            var trainee = await _service.GetById(id);
 
             if (trainee == null)
                 return NotFound(new { message = "Trainee not found" });
@@ -36,22 +36,21 @@ namespace taskmanagement.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] AddTraineeDto dto)
+        public async Task<IActionResult> Create([FromBody] AddTraineeDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var newTrainee = _service.Create(dto);
+            var newTrainee = await _service.Create(dto);
 
             return CreatedAtAction(nameof(GetById),
-                new { id = newTrainee.Id },
-                _service.MapToDto(newTrainee));
+                new { id = newTrainee.Id },_service.MapToDto(newTrainee));
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateById(int id, [FromBody] UpdateTraineeDto dto)
+        public async Task<IActionResult> UpdateById(int id, [FromBody] UpdateTraineeDto dto)
         {
-            var trainee = _service.Update(id, dto);
+            var trainee = await _service.Update(id, dto);
 
             if (trainee == null)
                 return NotFound(new { message = "Trainee not found" });
@@ -60,9 +59,9 @@ namespace taskmanagement.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteById(int id)
+        public async Task<IActionResult> DeleteById(int id)
         {
-            var deleted = _service.Delete(id);
+            var deleted = await _service.Delete(id);
 
             if (!deleted)
                 return NotFound(new { message = "Trainee not found" });

@@ -1,23 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using taskmanagement.Data;
 using taskmanagement.Models;
 
 public class TraineeService : ITraineeService
 {
-    // private static readonly List<Trainee> trainees = new()
-    // {
-    //     new Trainee
-    //     {
-    //         Id = 1,
-    //         FirstName = "Smit",
-    //         LastName = "Patel",
-    //         Email = "smit@example.com",
-    //         TechStack = "DotNet",
-    //         Status = TraineeStatus.Available,
-    //         CreatedDate = DateTime.UtcNow,
-    //         UpdatedDate = DateTime.UtcNow
-    //     }
-    // };
-
     private readonly AppDbContext _context;
 
     public TraineeService(AppDbContext context)
@@ -25,23 +11,34 @@ public class TraineeService : ITraineeService
         _context = context;
     }
 
-    public List<Trainee> GetAll()
+    public async Task<List<Trainee>> GetAll(string? search = null)
     {
-        return _context.Trainees.ToList();
+        var query = _context.Trainees.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.ToLower();
+
+            query = query.Where(t =>
+                t.FirstName.ToLower().Contains(search) ||
+                t.LastName.ToLower().Contains(search) ||
+                t.Email.ToLower().Contains(search) ||
+                t.TechStack.ToLower().Contains(search)
+            );
+        }
+
+        return await query.ToListAsync();
     }
 
-    public Trainee? GetById(int id)
+    public async Task<Trainee?> GetById(int id)
     {
-        return _context.Trainees.FirstOrDefault(t => t.Id == id);
+        return await _context.Trainees.FindAsync(id);
     }
 
-    public Trainee Create(AddTraineeDto dto)
+    public async Task<Trainee> Create(AddTraineeDto dto)
     {
-        var id = _context.Trainees.Any() ? _context.Trainees.Max(t => t.Id) + 1 : 1;
-
         var trainee = new Trainee
         {
-            Id = id,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Email = dto.Email,
@@ -51,14 +48,15 @@ public class TraineeService : ITraineeService
             UpdatedDate = DateTime.UtcNow
         };
 
-        _context.Trainees.Add(trainee);
-        _context.SaveChanges();
+        await _context.Trainees.AddAsync(trainee);
+        await _context.SaveChangesAsync();
+
         return trainee;
     }
 
-    public Trainee? Update(int id, UpdateTraineeDto dto)
+    public async Task<Trainee?> Update(int id, UpdateTraineeDto dto)
     {
-        var trainee = _context.Trainees.FirstOrDefault(t => t.Id == id);
+        var trainee = await _context.Trainees.FindAsync(id);
         if (trainee == null) return null;
 
         if (!string.IsNullOrEmpty(dto.FirstName))
@@ -77,17 +75,19 @@ public class TraineeService : ITraineeService
             trainee.Status = dto.Status.Value;
 
         trainee.UpdatedDate = DateTime.UtcNow;
-         _context.SaveChanges();
+
+        await _context.SaveChangesAsync();
         return trainee;
     }
 
-    public bool Delete(int id)
+    public async Task<bool> Delete(int id)
     {
-        var trainee = _context.Trainees.FirstOrDefault(t => t.Id == id);
+        var trainee = await _context.Trainees.FindAsync(id);
         if (trainee == null) return false;
 
         _context.Trainees.Remove(trainee);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
+
         return true;
     }
 

@@ -1,39 +1,106 @@
-# Trainee Management API
+# 📘 Trainee Management API
 
-This is a simple Trainee Management Web API developed using ASP.NET Core (.NET).
+##  Project Name
 
-## Technology Used
+taskmanagement(TraineeManagement)
 
-### Backend
-- .NET 10.0
+---
+
+##  Technology Used
 - C#
-
-### API Tools
-- Swagger
-
-### Storage
-- In-Memory List (Temporary Data Storage)
-
----
-
-## Features Completed
-
-- Health Check API
-- Add trainees
-- View all trainees
-- View trainee by ID
-- Swagger API testing interface
+- ASP.NET Core Web API
+- Entity Framework Core (InMemory Database)
+- Swagger (OpenAPI)
+- LINQ
+- JSON
 
 ---
 
-## API Endpoints
+##  How to Run
 
-### Health Check
-- GET `/api/health`
+1. Clone the repository
+```
+git clone https://github.com/smit2870/TrainingTasks.git  
+cd taskmanagement
+```
 
-### Trainee APIs
-- GET `/api/trainees` → Get all trainees  
-- GET `/api/trainees/{id}` → Get trainee by ID  
-- POST `/api/trainees` → Create new trainee  
+2. Run the project
+```
+dotnet run  
+```
+
+3. Open Swagger UI in browser:
+```
+https://localhost:7071/swagger  
+```
+
+---
+
+##  API List
+
+```
+- GET /api/health  
+- GET /api/trainees  
+- GET /api/trainees/{id}  
+- POST /api/trainees  
+- PUT /api/trainees/{id}  
+- DELETE /api/trainees/{id}  
+- GET /api/trainees?search=smit  
+```
+---
+
+##  Sample Request JSON
+```
+POST /api/trainees
+
+{
+  "firstName": "smit",
+  "lastName": "patel",
+  "email": "smit123a@gmail.com",
+  "techStack": "HTML, CSS, JavaScript",
+  "status": "Available"
+}
+```
+---
+
+##  Sample Response JSON
+
+Success Response for Create and Get All Trainee Details.
+```
+{
+  "id": 1,
+  "firstName": "smit",
+  "lastName": "patel",
+  "email": "smit123@gmail.com",
+  "techStack": "HTML, CSS, JavaScript",
+  "status": "Available"
+  "createdDate": "2026-06-08T10:45:38.3936817Z",
+  "updatedDate": "2026-06-08T10:45:38.3936817Z"
+}
+```
+
+Success Response for Get Trainee By Id and Changing Details(Put Request).
+```
+{
+  "firstName": "smit",
+  "lastName": "patel",
+  "email": "smit123@gmail.com",
+  "techStack": "HTML, CSS, JavaScript",
+  "status": "Available"
+  "updatedDate": "2026-06-08T10:45:38.3936817Z"
+}
+```
+---
 
 
+##  Known Limitations
+
+- Uses EF Core InMemory Database (data resets on restart)
+- No authentication or authorization
+- Limited validation rules
+
+---
+
+##  Future Improvements
+
+- Implement global error handling
