@@ -22,8 +22,7 @@ namespace taskmanagement.Models
         public string TechStack { get; set; }
 
         [Required]
-        [AllowedValues("Available","Offline","Busy","Do Not Disturb",ErrorMessage ="Status should be Available , Offline , Busy or Do Not Disturb")]
-        public string Status { get; set; }
+        public TraineeStatus? Status { get; set; }
 
     }
 }

@@ -2,18 +2,20 @@ using taskmanagement.Models;
 
 public class TraineeService : ITraineeService
 {
-    public static List<Trainee> trainees = new List<Trainee>{
-            new Trainee{
-                Id = 1,
-                FirstName = "Smit",
-                LastName = "Patel",
-                Email = "smit@example.com",
-                TechStack = "DotNet",
-                Status = "Active",
-                CreatedDate = DateTime.UtcNow,
-                UpdatedDate = DateTime.UtcNow
-            }
-        };
+    private static readonly List<Trainee> trainees = new()
+    {
+        new Trainee
+        {
+            Id = 1,
+            FirstName = "Smit",
+            LastName = "Patel",
+            Email = "smit@example.com",
+            TechStack = "DotNet",
+            Status = TraineeStatus.Available,
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
+        }
+    };
 
     public List<Trainee> GetAll()
     {
@@ -27,15 +29,15 @@ public class TraineeService : ITraineeService
 
     public Trainee Create(AddTraineeDto dto)
     {
-        var id = trainees.Any() ? trainees.Max(t => t.Id) + 1 : 1; 
+        var id = trainees.Any() ? trainees.Max(t => t.Id) + 1 : 1;
 
         var trainee = new Trainee
         {
             Id = id,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            TechStack = dto.TechStack,
             Email = dto.Email,
+            TechStack = dto.TechStack,
             Status = dto.Status,
             CreatedDate = DateTime.UtcNow,
             UpdatedDate = DateTime.UtcNow
@@ -43,13 +45,11 @@ public class TraineeService : ITraineeService
 
         trainees.Add(trainee);
         return trainee;
-
     }
 
     public Trainee? Update(int id, UpdateTraineeDto dto)
     {
         var trainee = trainees.FirstOrDefault(t => t.Id == id);
-        
         if (trainee == null) return null;
 
         if (!string.IsNullOrEmpty(dto.FirstName))
@@ -64,36 +64,33 @@ public class TraineeService : ITraineeService
         if (!string.IsNullOrEmpty(dto.TechStack))
             trainee.TechStack = dto.TechStack;
 
-        if (!string.IsNullOrEmpty(dto.Status))
-            trainee.Status = dto.Status;
+        if (dto.Status.HasValue)
+            trainee.Status = dto.Status.Value;
 
         trainee.UpdatedDate = DateTime.UtcNow;
 
         return trainee;
-
     }
 
     public bool Delete(int id)
     {
         var trainee = trainees.FirstOrDefault(t => t.Id == id);
-        
-        if (trainee == null) 
-            return false;
+        if (trainee == null) return false;
 
         trainees.Remove(trainee);
         return true;
-
     }
 
-    public TraineeResponseDto GetResponseData(Trainee trainee)
+    public TraineeResponseDto MapToDto(Trainee trainee)
     {
-        TraineeResponseDto dto = new TraineeResponseDto();
-        dto.FirstName = trainee.FirstName;
-        dto.LastName = trainee.LastName;
-        dto.Email = trainee.Email;
-        dto.TechStack = trainee.TechStack;
-        dto.Status = trainee.Status;
-        dto.UpdatedDate = trainee.UpdatedDate;
-        return dto;
+        return new TraineeResponseDto
+        {
+            FirstName = trainee.FirstName,
+            LastName = trainee.LastName,
+            Email = trainee.Email,
+            TechStack = trainee.TechStack,
+            Status = trainee.Status,
+            UpdatedDate = trainee.UpdatedDate
+        };
     }
 }
