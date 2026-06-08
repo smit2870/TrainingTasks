@@ -1,35 +1,43 @@
+using taskmanagement.Data;
 using taskmanagement.Models;
 
 public class TraineeService : ITraineeService
 {
-    private static readonly List<Trainee> trainees = new()
+    // private static readonly List<Trainee> trainees = new()
+    // {
+    //     new Trainee
+    //     {
+    //         Id = 1,
+    //         FirstName = "Smit",
+    //         LastName = "Patel",
+    //         Email = "smit@example.com",
+    //         TechStack = "DotNet",
+    //         Status = TraineeStatus.Available,
+    //         CreatedDate = DateTime.UtcNow,
+    //         UpdatedDate = DateTime.UtcNow
+    //     }
+    // };
+
+    private readonly AppDbContext _context;
+
+    public TraineeService(AppDbContext context)
     {
-        new Trainee
-        {
-            Id = 1,
-            FirstName = "Smit",
-            LastName = "Patel",
-            Email = "smit@example.com",
-            TechStack = "DotNet",
-            Status = TraineeStatus.Available,
-            CreatedDate = DateTime.UtcNow,
-            UpdatedDate = DateTime.UtcNow
-        }
-    };
+        _context = context;
+    }
 
     public List<Trainee> GetAll()
     {
-        return trainees;
+        return _context.Trainees.ToList();
     }
 
     public Trainee? GetById(int id)
     {
-        return trainees.FirstOrDefault(t => t.Id == id);
+        return _context.Trainees.FirstOrDefault(t => t.Id == id);
     }
 
     public Trainee Create(AddTraineeDto dto)
     {
-        var id = trainees.Any() ? trainees.Max(t => t.Id) + 1 : 1;
+        var id = _context.Trainees.Any() ? _context.Trainees.Max(t => t.Id) + 1 : 1;
 
         var trainee = new Trainee
         {
@@ -43,13 +51,14 @@ public class TraineeService : ITraineeService
             UpdatedDate = DateTime.UtcNow
         };
 
-        trainees.Add(trainee);
+        _context.Trainees.Add(trainee);
+        _context.SaveChanges();
         return trainee;
     }
 
     public Trainee? Update(int id, UpdateTraineeDto dto)
     {
-        var trainee = trainees.FirstOrDefault(t => t.Id == id);
+        var trainee = _context.Trainees.FirstOrDefault(t => t.Id == id);
         if (trainee == null) return null;
 
         if (!string.IsNullOrEmpty(dto.FirstName))
@@ -68,16 +77,17 @@ public class TraineeService : ITraineeService
             trainee.Status = dto.Status.Value;
 
         trainee.UpdatedDate = DateTime.UtcNow;
-
+         _context.SaveChanges();
         return trainee;
     }
 
     public bool Delete(int id)
     {
-        var trainee = trainees.FirstOrDefault(t => t.Id == id);
+        var trainee = _context.Trainees.FirstOrDefault(t => t.Id == id);
         if (trainee == null) return false;
 
-        trainees.Remove(trainee);
+        _context.Trainees.Remove(trainee);
+        _context.SaveChanges();
         return true;
     }
 

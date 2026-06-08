@@ -17,8 +17,9 @@ namespace taskmanagement.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var data = _service.GetAll()
-                .Select(t => _service.MapToDto(t));
+            var data = _service.GetAll().ToList();
+            // var data = _service.GetAll()
+            //     .Select(t => _service.MapToDto(t));
 
             return Ok(data);
         }

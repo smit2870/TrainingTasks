@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
+using taskmanagement.Data;
+using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseInMemoryDatabase("TraineeManagementDb"));
+    
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -12,7 +18,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<ITraineeService, TraineeService>();
+builder.Services.AddScoped<ITraineeService, TraineeService>();
 
 var app = builder.Build();
 
