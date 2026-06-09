@@ -21,7 +21,7 @@ namespace taskmanagement.Controllers
 
             var result = data.Select(t => _service.MapToDto(t));
 
-            return Ok(data);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]

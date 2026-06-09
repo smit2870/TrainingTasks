@@ -14,7 +14,6 @@ namespace taskmanagement.Models
 
         public required string TechStack { get; set; }
 
-        [Required]
         public TraineeStatus Status { get; set; }
 
         public DateTime UpdatedDate { get; set; }
