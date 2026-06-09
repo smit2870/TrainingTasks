@@ -16,6 +16,28 @@ taskmanagement(TraineeManagement)
 
 ---
 
+## Database Setup (MySQL)
+
+1. Install MySql
+
+2. Update Connection String
+Edit your appsettings.json
+```
+"ConnectionStrings": {
+  "DefaultConnection": "server=localhost;port=3306;database=TraineeDB;user=root;password=yourpassword"
+}
+```
+
+3. Install Required Packages
+
+```
+dotnet add package Pomelo.EntityFrameworkCore.MySql
+dotnet add package Microsoft.EntityFrameworkCore.Design
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+```
+
+
+
 ##  How to Run
 
 1. Clone the repository
@@ -82,6 +104,7 @@ Success Response for Create and Get All Trainee Details.
 Success Response for Get Trainee By Id and Changing Details(Put Request).
 ```
 {
+  "id": 1
   "firstName": "smit",
   "lastName": "patel",
   "email": "smit123@gmail.com",
