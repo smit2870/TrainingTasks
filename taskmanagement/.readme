@@ -9,7 +9,7 @@ taskmanagement(TraineeManagement)
 ##  Technology Used
 - C#
 - ASP.NET Core Web API
-- Entity Framework Core (InMemory Database)
+- MySQL
 - Swagger (OpenAPI)
 - LINQ
 - JSON
@@ -18,9 +18,21 @@ taskmanagement(TraineeManagement)
 
 ## Database Setup (MySQL)
 
-1. Install MySql
+1. Install MySql Server
+```
+sudo apt install mysql-server -y
+```
 
-2. Update Connection String
+2. Start MySql Server
+```
+sudo service mysql start
+```
+3. Run the server
+```
+mysql -u root -p
+```
+
+4. Update Connection String
 Edit your appsettings.json
 ```
 "ConnectionStrings": {
@@ -28,8 +40,7 @@ Edit your appsettings.json
 }
 ```
 
-3. Install Required Packages
-
+5. Install Required Packages
 ```
 dotnet add package Pomelo.EntityFrameworkCore.MySql
 dotnet add package Microsoft.EntityFrameworkCore.Design
@@ -60,15 +71,16 @@ https://localhost:7071/swagger
 
 ##  API List
 
-```
-- GET /api/health  
-- GET /api/trainees  
-- GET /api/trainees/{id}  
-- POST /api/trainees  
-- PUT /api/trainees/{id}  
-- DELETE /api/trainees/{id}  
-- GET /api/trainees?search=smit  
-```
+|Method|   Endpoint | Description |
+|--------| --------| -------- |
+|`GET`| `/api/health`  | Check API Status  |
+|`GET`|`/api/Trainee` | Fetch all trainees from db|
+|`GET`|`/api/Trainee?={searchQuery}` | Fetch trainees based on searchQuery|
+|`GET`|`/api/Trainee/{id}` | Fech a particular trainee by ID |
+|`POST`|`/api/Trainee` | Post trainee  |
+|`PUT`|`/api/Trainee/{id}` | Update trainee  |
+|`DELETE`|`/api/Trainee/{id}` | Delete trainee  |
+
 ---
 
 ##  Sample Request JSON
@@ -118,7 +130,6 @@ Success Response for Get Trainee By Id and Changing Details(Put Request).
 
 ##  Known Limitations
 
-- Uses EF Core InMemory Database (data resets on restart)
 - No authentication or authorization
 - Limited validation rules
 
