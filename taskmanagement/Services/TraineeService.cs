@@ -71,8 +71,7 @@ public class TraineeService : ITraineeService
         if (!string.IsNullOrEmpty(dto.TechStack))
             trainee.TechStack = dto.TechStack;
 
-        if (dto.Status.HasValue)
-            trainee.Status = dto.Status.Value;
+        trainee.Status = dto.Status;
 
         trainee.UpdatedDate = DateTime.UtcNow;
 

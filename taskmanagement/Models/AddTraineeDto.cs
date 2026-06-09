@@ -16,7 +16,7 @@ namespace taskmanagement.Models
         public required string Email { get; set; }
         public required string TechStack { get; set; }
 
-        public TraineeStatus? Status { get; set; }
+        public TraineeStatus Status { get; set; }
 
     }
 }

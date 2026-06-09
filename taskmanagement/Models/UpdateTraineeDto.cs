@@ -17,8 +17,7 @@ namespace taskmanagement.Models
 
         public required string TechStack { get; set; }
 
-        [Required(ErrorMessage = "Status should be Available, Offline, Busy, DND.")]
-        public TraineeStatus? Status { get; set; }  
+        public TraineeStatus Status { get; set; }  
 
     }
 }
