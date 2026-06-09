@@ -94,6 +94,7 @@ public class TraineeService : ITraineeService
     {
         return new TraineeResponseDto
         {
+            Id = trainee.Id,
             FirstName = trainee.FirstName,
             LastName = trainee.LastName,
             Email = trainee.Email,

@@ -19,7 +19,7 @@ namespace taskmanagement.Controllers
         {
             var data = await _service.GetAll(search);
 
-            // var result = data.Select(t => _service.MapToDto(t));
+            var result = data.Select(t => _service.MapToDto(t));
 
             return Ok(data);
         }
