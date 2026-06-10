@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using taskmanagement.Models.DTOs.Trainee;
+using Microsoft.AspNetCore.Authorization;
 
 namespace taskmanagement.Controllers
 {
+    [Authorize] 
     [ApiController]
     [Route("api/[controller]")]
     public class TraineesController : ControllerBase

@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using taskmanagement.Models;
 using taskmanagement.Data;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using taskmanagement.Models.DTOs.User;
 
 
@@ -28,7 +24,8 @@ namespace taskmanagement.Controllers
             _tokenProvider = tokenProvider;
         }
 
-        [HttpPost]
+        [AllowAnonymous]
+        [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDto dto)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
