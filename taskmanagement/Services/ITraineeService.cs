@@ -1,9 +1,11 @@
 using taskmanagement.Models.DTOs.Trainee;
 using taskmanagement.Models.Entities;
+using taskmanagement.Models.Enums;
+using taskmanagement.Models.DTOs.Common;
 
 public interface ITraineeService
 {
-    Task<List<Trainee>> GetAll(string? search = null);
+    Task<PagedResponse<Trainee>> GetAll(string? search, TraineeStatus? status, int pageNumber, int pageSize);
     Task<Trainee?> GetById(int id);
 
     Task<Trainee> Create(AddTraineeDto dto);

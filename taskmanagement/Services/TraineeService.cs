@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using taskmanagement.Data;
 using taskmanagement.Models.Entities;
 using taskmanagement.Models.DTOs.Trainee;
+using taskmanagement.Models.Enums;
+using taskmanagement.Models.DTOs.Common;
 
 public class TraineeService : ITraineeService
 {
@@ -12,7 +14,7 @@ public class TraineeService : ITraineeService
         _context = context;
     }
 
-    public async Task<List<Trainee>> GetAll(string? search = null)
+    public async Task<PagedResponse<Trainee>> GetAll(string? search, TraineeStatus? status, int pageNumber, int pageSize)
     {
         var query = _context.Trainees.AsQueryable();
 
@@ -28,7 +30,26 @@ public class TraineeService : ITraineeService
             );
         }
 
-        return await query.ToListAsync();
+        if (status.HasValue)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+        var totalRecords = await query.CountAsync();
+
+        var data = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        
+        return new PagedResponse<Trainee>
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = totalRecords,
+            Data = data
+        };
+
     }
 
     public async Task<Trainee?> GetById(int id)

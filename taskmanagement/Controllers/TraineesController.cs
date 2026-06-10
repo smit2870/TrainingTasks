@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using taskmanagement.Models.DTOs.Trainee;
 using Microsoft.AspNetCore.Authorization;
+using taskmanagement.Models.Enums;
 
 namespace taskmanagement.Controllers
 {
@@ -17,13 +18,23 @@ namespace taskmanagement.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAll([FromQuery] string? search,[FromQuery] TraineeStatus status, [FromQuery] int pageNumber,[FromQuery] int pageSize)
         {
-            var data = await _service.GetAll(search);
+            if (pageNumber <= 0 || pageSize <= 0)
+                return BadRequest("pageNumber and pageSize must be greater than 0");
 
-            var result = data.Select(t => _service.MapToDto(t));
+            var result = await _service.GetAll(search,status,pageNumber,pageSize);
 
-            return Ok(result);
+            var mapped = result.Data.Select(t => _service.MapToDto(t)).ToList();
+            
+            return Ok(new
+            {
+                pageNumber = result.PageNumber,
+                pageSize = result.PageSize,
+                totalRecords = result.TotalRecords,
+                data = mapped
+            });
+
         }
 
         [HttpGet("{id}")]
