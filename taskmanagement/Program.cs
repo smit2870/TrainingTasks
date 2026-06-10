@@ -11,20 +11,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 // builder.Services.AddDbContext<AppDbContext>(options =>
 //     options.UseInMemoryDatabase("TraineeManagementDb"));
+
+// MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
+// Enum Converter
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-
+// JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+var jwtKey = jwtSettings["Key"] ?? throw new Exception("JWT Key missing");
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -48,8 +52,24 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",  
+                "https://localhost:3000",
+                "http://localhost:5173"   
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddEndpointsApiExplorer();
+
+// Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -83,21 +103,23 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Services
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TokenProviderService>();
 builder.Services.AddScoped<ITraineeService, TraineeService>();
 
 var app = builder.Build();
-
 if (app.Environment.IsDevelopment()){
     app.UseSwagger();
     app.UseSwaggerUI();  
 }
 
+
 app.UseHttpsRedirection();
-app.MapControllers();
+app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.Run();
 
