@@ -1,5 +1,5 @@
 
-namespace taskmanagement.Models
+namespace taskmanagement.Models.DTOs.User
 {
     public class LoginRequestDto
     {

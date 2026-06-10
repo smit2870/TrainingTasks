@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using taskmanagement.Models.Enums;
 
-namespace taskmanagement.Models{
+namespace taskmanagement.Models.Entities
+{
     public class Trainee{
         
         public Trainee()

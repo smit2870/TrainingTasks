@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using taskmanagement.Models;
+using taskmanagement.Models.Entities;
 using taskmanagement.Data;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +8,6 @@ using System.Security.Claims;
 
 public class TokenProviderService
 {
-    
     private readonly IConfiguration _config;
 
     public TokenProviderService(IConfiguration config)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using taskmanagement.Data;
-using taskmanagement.Models;
+using taskmanagement.Models.Entities;
+using taskmanagement.Models.DTOs.Trainee;
 
 public class TraineeService : ITraineeService
 {

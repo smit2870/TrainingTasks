@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
-using taskmanagement.Models;
+using taskmanagement.Models.Entities;
+using taskmanagement.Models.Enums;
 
 namespace taskmanagement.Data
 {

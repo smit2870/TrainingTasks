@@ -1,4 +1,5 @@
-using taskmanagement.Models;
+using taskmanagement.Models.DTOs.Trainee;
+using taskmanagement.Models.Entities;
 
 public interface ITraineeService
 {

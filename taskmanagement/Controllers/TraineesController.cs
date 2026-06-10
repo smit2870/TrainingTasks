@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using taskmanagement.Models;
+using taskmanagement.Models.DTOs.Trainee;
 
 namespace taskmanagement.Controllers
 {

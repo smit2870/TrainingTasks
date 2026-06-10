@@ -1,5 +1,6 @@
+using taskmanagement.Models.Enums;
 
-namespace taskmanagement.Models
+namespace taskmanagement.Models.DTOs.User
 {
     public class UserResponseDto
     {

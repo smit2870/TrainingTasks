@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace taskmanagement.Models
+namespace taskmanagement.Models.Enums
 {
     public enum UserRole
     {
