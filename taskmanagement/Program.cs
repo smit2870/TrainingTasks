@@ -52,6 +52,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<PasswordService>();
+builder.Services.AddScoped<TokenProviderService>();
 builder.Services.AddScoped<ITraineeService, TraineeService>();
 
 var app = builder.Build();
