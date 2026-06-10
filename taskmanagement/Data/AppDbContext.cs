@@ -12,5 +12,32 @@ namespace taskmanagement.Data
             
         }
         public DbSet<Trainee> Trainees { get; set; }
+
+        public DbSet<User> Users { get; set; }
+
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+            {
+                base.OnModelCreating(modelBuilder);
+
+                modelBuilder.Entity<User>()
+                    .HasIndex(u => u.Username)
+                    .IsUnique();
+
+                modelBuilder.Entity<User>()
+                    .HasIndex(u => u.Email)
+                    .IsUnique();
+
+                // Seed Admin user
+                modelBuilder.Entity<User>().HasData(new User
+                {
+                    Id = 1,
+                    Username = "admin",
+                    Email = "admin@test.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                    Role = UserRole.Admin,
+                    CreatedDate = DateTime.UtcNow
+                });
+        }
     }
 }
