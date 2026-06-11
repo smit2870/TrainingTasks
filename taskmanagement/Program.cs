@@ -107,6 +107,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TokenProviderService>();
 builder.Services.AddScoped<ITraineeService, TraineeService>();
+builder.Services.AddScoped<IMentorService, MentorService>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment()){
