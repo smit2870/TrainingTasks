@@ -8,108 +8,174 @@ using taskmanagement.Models.DTOs.Common;
 public class TraineeService : ITraineeService
 {
     private readonly AppDbContext _context;
+    private readonly ILogger<TraineeService> _logger;
 
-    public TraineeService(AppDbContext context)
+    public TraineeService(AppDbContext context, ILogger<TraineeService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<PagedResponse<Trainee>> GetAll(string? search, TraineeStatus? status, int pageNumber, int pageSize)
     {
-        var query = _context.Trainees.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
+        try
         {
-            search = search.ToLower();
+            var query = _context.Trainees.AsQueryable();
 
-            query = query.Where(t =>
-                t.FirstName.ToLower().Contains(search) ||
-                t.LastName.ToLower().Contains(search) ||
-                t.Email.ToLower().Contains(search) ||
-                t.TechStack.ToLower().Contains(search)
-            );
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                _logger.LogInformation("Searching trainees with keyword={Search}", search);
+
+                search = search.ToLower();
+
+                query = query.Where(t =>
+                    t.FirstName.ToLower().Contains(search) ||
+                    t.LastName.ToLower().Contains(search) ||
+                    t.Email.ToLower().Contains(search) ||
+                    t.TechStack.ToLower().Contains(search)
+                );
+            }
+
+            if (status.HasValue)
+            {
+                _logger.LogInformation("Filtering trainees with status={Status}", status);
+                query = query.Where(t => t.Status == status.Value);
+            }
+
+            var totalRecords = await query.CountAsync();
+
+            var data = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            _logger.LogInformation("Fetched trainees list Count={Count}, Page={Page}, Size={Size}",
+                data.Count, pageNumber, pageSize);
+
+            return new PagedResponse<Trainee>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                Data = data
+            };
         }
-
-        if (status.HasValue)
+        catch (Exception ex)
         {
-            query = query.Where(t => t.Status == status.Value);
+            _logger.LogError(ex, "Error while fetching trainees list");
+            throw;
         }
-        var totalRecords = await query.CountAsync();
-
-        var data = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        
-        return new PagedResponse<Trainee>
-        {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            TotalRecords = totalRecords,
-            Data = data
-        };
-
     }
 
     public async Task<Trainee?> GetById(int id)
     {
-        return await _context.Trainees.FindAsync(id);
+        try
+        {
+            var trainee = await _context.Trainees.FindAsync(id);
+            return trainee;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while fetching trainee Id={Id}", id);
+            throw;
+        }
     }
 
     public async Task<Trainee> Create(AddTraineeDto dto)
     {
-        var trainee = new Trainee
+        try
         {
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Email = dto.Email,
-            TechStack = dto.TechStack,
-            Status = dto.Status,
-            CreatedDate = DateTime.UtcNow,
-            UpdatedDate = DateTime.UtcNow
-        };
+            var trainee = new Trainee
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                TechStack = dto.TechStack,
+                Status = dto.Status,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
 
-        await _context.Trainees.AddAsync(trainee);
-        await _context.SaveChangesAsync();
+            await _context.Trainees.AddAsync(trainee);
+            await _context.SaveChangesAsync();
 
-        return trainee;
+            _logger.LogInformation("Trainee created successfully Id={Id}", trainee.Id);
+
+            return trainee;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while creating trainee Email={Email}", dto.Email);
+            throw;
+        }
     }
 
     public async Task<Trainee?> Update(int id, UpdateTraineeDto dto)
     {
-        var trainee = await _context.Trainees.FindAsync(id);
-        if (trainee == null) return null;
+        try
+        {
+            var trainee = await _context.Trainees.FindAsync(id);
 
-        if (!string.IsNullOrEmpty(dto.FirstName))
-            trainee.FirstName = dto.FirstName;
+            if (trainee == null)
+            {
+                _logger.LogWarning("Update failed. Trainee not found Id={Id}", id);
+                return null;
+            }
 
-        if (!string.IsNullOrEmpty(dto.LastName))
-            trainee.LastName = dto.LastName;
+            _logger.LogInformation("Updating trainee Id={Id}", id);
 
-        if (!string.IsNullOrEmpty(dto.Email))
-            trainee.Email = dto.Email;
+            if (!string.IsNullOrEmpty(dto.FirstName))
+                trainee.FirstName = dto.FirstName;
 
-        if (!string.IsNullOrEmpty(dto.TechStack))
-            trainee.TechStack = dto.TechStack;
+            if (!string.IsNullOrEmpty(dto.LastName))
+                trainee.LastName = dto.LastName;
 
-        trainee.Status = dto.Status;
+            if (!string.IsNullOrEmpty(dto.Email))
+                trainee.Email = dto.Email;
 
-        trainee.UpdatedDate = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(dto.TechStack))
+                trainee.TechStack = dto.TechStack;
 
-        await _context.SaveChangesAsync();
-        return trainee;
+            trainee.Status = dto.Status;
+            trainee.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Trainee updated successfully Id={Id}", id);
+
+            return trainee;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while updating trainee Id={Id}", id);
+            throw;
+        }
     }
 
     public async Task<bool> Delete(int id)
     {
-        var trainee = await _context.Trainees.FindAsync(id);
-        if (trainee == null) return false;
+        try
+        {
+            var trainee = await _context.Trainees.FindAsync(id);
 
-        _context.Trainees.Remove(trainee);
-        await _context.SaveChangesAsync();
+            if (trainee == null)
+            {
+                _logger.LogWarning("Delete failed. Trainee not found Id={Id}", id);
+                return false;
+            }
 
-        return true;
+            _context.Trainees.Remove(trainee);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Trainee deleted successfully Id={Id}", id);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while deleting trainee Id={Id}", id);
+            throw;
+        }
     }
 
     public TraineeResponseDto MapToDto(Trainee trainee)
