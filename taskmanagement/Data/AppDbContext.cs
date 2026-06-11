@@ -16,6 +16,8 @@ namespace taskmanagement.Data
 
         public DbSet<User> Users { get; set; }
 
+        public DbSet<Mentor> Mentor { get; set; }
+
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -28,6 +30,17 @@ namespace taskmanagement.Data
                 modelBuilder.Entity<User>()
                     .HasIndex(u => u.Email)
                     .IsUnique();
+
+                modelBuilder.Entity<Mentor>()
+                    .HasIndex(m => m.Email)
+                    .IsUnique();
+                
+                
+                // modelBuilder.Entity<Mentor>()
+                //     .Property(m => m.Status)
+                //     .HasConversion<string>()
+                //     .HasDefaultValue(MentorStatus.Active);
+
 
                 // Seed Admin user
                 modelBuilder.Entity<User>().HasData(new User
