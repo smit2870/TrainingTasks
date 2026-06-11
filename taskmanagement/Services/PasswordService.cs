@@ -1,15 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using taskmanagement.Data;
 using taskmanagement.Models;
-public class PasswordService
-{
-    public string HashPassword(string password)
-    {
-        return BCrypt.Net.BCrypt.HashPassword(password);
-    }
 
-    public bool VerifyPassword(string password, string hash)
+namespace taskmanagement.Services
+{
+    public class PasswordService
     {
-        return BCrypt.Net.BCrypt.Verify(password, hash);
+        public string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        public bool VerifyPassword(string password, string hash)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hash);
+        }
     }
 }
+

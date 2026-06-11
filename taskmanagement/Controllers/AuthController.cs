@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using taskmanagement.Data;
 using Microsoft.AspNetCore.Authorization;
 using taskmanagement.Models.DTOs.User;
+using taskmanagement.Services;
 
 namespace taskmanagement.Controllers
 {
