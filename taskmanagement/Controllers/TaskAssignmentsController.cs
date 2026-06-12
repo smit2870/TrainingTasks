@@ -1,0 +1,106 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using taskmanagement.Models.DTOs.Common;
+using taskmanagement.Models.DTOs.TaskAssignment;
+using taskmanagement.Models.Entities;
+using taskmanagement.Models.Enums;
+using taskmanagement.Services;
+
+namespace taskmanagement.Controllers
+{
+    [Authorize]
+    [Route("api/[controller]")]
+    [ApiController]
+    public class TaskAssignmentsController : ControllerBase
+    {
+        private readonly ITaskAssignmentService _service;
+        private readonly ILogger<TaskAssignmentsController> _logger;
+
+        public TaskAssignmentsController(ITaskAssignmentService service, ILogger<TaskAssignmentsController> logger)
+        {
+            _service = service;
+            _logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll([FromQuery] int? traineeId, [FromQuery] int? mentorId, [FromQuery] TaskAssignmentStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var result = await _service.GetAll(traineeId, mentorId, status, pageNumber, pageSize);
+
+                var response = new PagedResponse<TaskAssignmentResponseDto>
+                {
+                    PageNumber = result.PageNumber,
+                    PageSize = result.PageSize,
+                    TotalRecords = result.TotalRecords,
+                    Data = result.Data.Select(x => _service.MapToDto(x)).ToList()
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching task assignments");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                var entity = await _service.GetById(id);
+
+                if (entity == null)
+                    return NotFound($"TaskAssignment not found with Id={id}");
+
+                return Ok(_service.MapToDto(entity));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error while fetching TaskAssignment Id={Id}", id);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateTaskAssignmentDto dto)
+        {
+            try
+            {
+                var created = await _service.Create(dto);
+
+                var response = _service.MapToDto(created);
+
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while creating TaskAssignment");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // ✅ UPDATE STATUS
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateTaskAssignmentDto dto)
+        {
+            try
+            {
+                var updated = await _service.UpdateStatus(id, dto);
+
+                if (updated == null)
+                    return NotFound($"TaskAssignment not found with Id={id}");
+
+                return Ok(_service.MapToDto(updated));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while updating TaskAssignment Id={Id}", id);
+                return BadRequest(ex.Message);
+            }
+        }
+    }
+}

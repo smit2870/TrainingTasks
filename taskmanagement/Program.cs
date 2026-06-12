@@ -109,6 +109,8 @@ builder.Services.AddScoped<TokenProviderService>();
 builder.Services.AddScoped<ITraineeService, TraineeService>();
 builder.Services.AddScoped<IMentorService, MentorService>();
 builder.Services.AddScoped<ILearningTaskService, LearningTaskService>();
+builder.Services.AddScoped<TaskAssignmentValidator>();
+builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment()){
