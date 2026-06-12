@@ -91,7 +91,7 @@ namespace taskmanagement.Controllers
         {
             var mentor = await _service.Delete(id);
 
-            if(mentor == null)
+            if(mentor == false)
             {
                 return NotFound(new { message = "Mentor not found"});
             }
