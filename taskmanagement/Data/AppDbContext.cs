@@ -18,6 +18,8 @@ namespace taskmanagement.Data
 
         public DbSet<Mentor> Mentor { get; set; }
 
+        public DbSet<LearningTask> LearningTask { get; set; }
+
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
