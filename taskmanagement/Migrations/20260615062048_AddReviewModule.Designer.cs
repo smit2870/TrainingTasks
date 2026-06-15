@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using taskmanagement.Data;
 
@@ -11,9 +12,11 @@ using taskmanagement.Data;
 namespace taskmanagement.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615062048_AddReviewModule")]
+    partial class AddReviewModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -115,11 +118,11 @@ namespace taskmanagement.Migrations
                     b.Property<int>("MentorId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("ReviedwDate")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("ReviewStatus")
                         .HasColumnType("int");
-
-                    b.Property<DateTime>("ReviewedDate")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<int?>("Score")
                         .HasColumnType("int");
@@ -289,9 +292,9 @@ namespace taskmanagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 6, 15, 7, 10, 58, 638, DateTimeKind.Utc).AddTicks(6710),
+                            CreatedDate = new DateTime(2026, 6, 15, 6, 20, 48, 99, DateTimeKind.Utc).AddTicks(5541),
                             Email = "admin@test.com",
-                            PasswordHash = "$2a$11$DJ3eaG3NDVoeAfTmLhRym.AleC8bu9KaE/ksqXXLbysPJ4qJH7V6q",
+                            PasswordHash = "$2a$11$90E3XSOnFEgXxtFiz76Mcuw8AW39UuQhbI2sn9hvRCt8J9gvySCSi",
                             Role = 1,
                             UpdatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Username = "admin"
