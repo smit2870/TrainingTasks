@@ -112,6 +112,8 @@ builder.Services.AddScoped<ILearningTaskService, LearningTaskService>();
 builder.Services.AddScoped<TaskAssignmentValidator>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<ReviewValidator>();
+builder.Services.AddScoped<IRerviewService, ReviewService>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment()){
