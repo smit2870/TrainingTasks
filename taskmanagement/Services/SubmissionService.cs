@@ -76,7 +76,7 @@ namespace taskmanagement.Services
                 throw;
             }
         }
-        public async Task<Submission> GetById(int id)
+        public async Task<Submission?> GetById(int id)
         {
             try
             {
