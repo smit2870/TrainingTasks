@@ -21,6 +21,8 @@ namespace taskmanagement.Data
         public DbSet<LearningTask> LearningTask { get; set; }
 
         public DbSet<TaskAssignment> TaskAssignment { get; set; }
+
+        public DbSet<Submission> Submission { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -56,6 +58,14 @@ namespace taskmanagement.Data
                     .WithMany()
                     .HasForeignKey(t => t.LearningTaskId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                
+                modelBuilder.Entity<Submission>().HasKey(s => s.Id);
+
+                modelBuilder.Entity<Submission>()
+                    .HasOne(s => s.TaskAssignment)
+                    .WithMany()
+                    .HasForeignKey(s => s.TaskAssignmentId);
 
                 // modelBuilder.Entity<Mentor>()
                 //     .Property(m => m.Status)
