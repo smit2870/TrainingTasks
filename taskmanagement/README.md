@@ -38,7 +38,7 @@ sudo mysql
 ```sql
 ALTER USER 'root'@'localhost'
 IDENTIFIED WITH mysql_native_password
-BY 'password_to_be_used_everytime_for_using_mysql_server_cli';
+BY 'your_password';
 ```
 8. Apply Changes
 ```sql
@@ -173,7 +173,7 @@ PUT    /api/trainees/{id}
 DELETE /api/trainees/{id} 
 ```
 
-- Metor
+- Mentor
 ```http
 GET    /api/mentors 
 GET    /api/mentors/{id} 
@@ -387,3 +387,7 @@ dotnet ef update database
 | Logging | Passwords and tokens not logged | ✅ |
 
 ## Next Improvement Areas
+
+- Swagger Enhancement
+- Support file uploads in submissions can be implemented to allow trainees to attach documents like PDFs or project files
+- Performance Improvement
