@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using taskmanagement.Services;
+using taskmanagement.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,7 +122,7 @@ if (app.Environment.IsDevelopment()){
     app.UseSwaggerUI();  
 }
 
-
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
