@@ -19,7 +19,14 @@ namespace taskmanagement.Services
 
         public string GenerateJwtToken(User user)
         {
-            var key = Encoding.UTF8.GetBytes(_config["Jwt:key"]);
+            var jwtKey = _config["Jwt:Key"];
+
+            if (string.IsNullOrEmpty(jwtKey))
+            {
+                throw new Exception("JWT key not found in configuration");
+            }
+
+            var key = Encoding.UTF8.GetBytes(jwtKey);
 
             var claims = new[]
             {

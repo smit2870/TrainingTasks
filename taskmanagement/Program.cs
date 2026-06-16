@@ -7,28 +7,37 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using taskmanagement.Services;
 using taskmanagement.Middlewares;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//     options.UseInMemoryDatabase("TraineeManagementDb"));
+Env.Load();
 
-// MySQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT");
+var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+var connectionString = $"server={dbHost};port={dbPort};database={dbName};user={dbUser};password={dbPassword};";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// Enum Converter
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// JWT
+
+//  JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSettings["Key"] ?? throw new Exception("JWT Key missing");
+
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? throw new Exception("JWT Key missing");
+builder.Configuration["Jwt:Key"] = jwtKey;
+
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
@@ -40,6 +49,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -53,24 +63,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// CORS
+
+//  CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:3000",  
+                "http://localhost:3000",
                 "https://localhost:3000",
-                "http://localhost:5173"   
+                "http://localhost:5173"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -78,6 +89,7 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Task Management API",
         Version = "v1"
     });
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -104,6 +116,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+
 // Services
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TokenProviderService>();
@@ -116,10 +129,13 @@ builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<ReviewValidator>();
 builder.Services.AddScoped<IRerviewService, ReviewService>();
 
+
 var app = builder.Build();
-if (app.Environment.IsDevelopment()){
+
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
-    app.UseSwaggerUI();  
+    app.UseSwaggerUI();
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -127,7 +143,5 @@ app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();
-
