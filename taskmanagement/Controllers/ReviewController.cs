@@ -6,7 +6,6 @@ using taskmanagement.Models.DTOs.Review;
 
 namespace taskmanagement.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class ReviewController: ControllerBase
@@ -20,7 +19,7 @@ namespace taskmanagement.Controllers
             _logger = logger;
         }
 
-
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -35,6 +34,7 @@ namespace taskmanagement.Controllers
             return Ok(mapped);
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPost]
         public async Task<IActionResult> create([FromBody] CreateReviewDto dto)
         {
@@ -45,6 +45,7 @@ namespace taskmanagement.Controllers
 
         }
 
+        [Authorize(Roles = "Admin,Mentor,Trainee")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {

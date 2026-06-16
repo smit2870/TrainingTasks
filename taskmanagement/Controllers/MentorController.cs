@@ -7,7 +7,7 @@ using taskmanagement.Services;
 
 namespace taskmanagement.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Mentor")]
     [ApiController]
     [Route("api/[controller]")]
     public class MentorController : ControllerBase

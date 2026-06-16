@@ -6,7 +6,6 @@ using taskmanagement.Services;
 
 namespace taskmanagement.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class LearningTasksController : ControllerBase
@@ -20,6 +19,7 @@ namespace taskmanagement.Controllers
             _logger = logger;
         }
 
+        [Authorize(Roles = "Admin,Mentor,Trainee")]
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? search,
@@ -49,6 +49,7 @@ namespace taskmanagement.Controllers
             });
         }
 
+        [Authorize(Roles = "Admin,Mentor,Trainee")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -65,6 +66,7 @@ namespace taskmanagement.Controllers
             return Ok(_service.MapToDto(task));
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateLearningTaskDto dto)
         {
@@ -81,6 +83,7 @@ namespace taskmanagement.Controllers
                 _service.MapToDto(newTask));
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateById(int id, [FromBody] UpdateLearningTaskDto dto)
         {
@@ -98,6 +101,7 @@ namespace taskmanagement.Controllers
             return Ok(_service.MapToDto(updatedTask));
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteById(int id)
         {

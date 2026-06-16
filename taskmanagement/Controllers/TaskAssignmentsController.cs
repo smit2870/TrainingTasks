@@ -8,7 +8,6 @@ using taskmanagement.Services;
 
 namespace taskmanagement.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class TaskAssignmentsController : ControllerBase
@@ -22,6 +21,7 @@ namespace taskmanagement.Controllers
             _logger = logger;
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int? traineeId, [FromQuery] int? mentorId, [FromQuery] TaskAssignmentStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -46,6 +46,7 @@ namespace taskmanagement.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin,Mentor,Trainee")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -65,6 +66,7 @@ namespace taskmanagement.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateTaskAssignmentDto dto)
         {
@@ -83,7 +85,7 @@ namespace taskmanagement.Controllers
             }
         }
 
-        // ✅ UPDATE STATUS
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateTaskAssignmentDto dto)
         {
