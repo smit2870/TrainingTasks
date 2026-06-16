@@ -128,6 +128,8 @@ builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<ReviewValidator>();
 builder.Services.AddScoped<IRerviewService, ReviewService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<UserValidator>();
 
 
 var app = builder.Build();

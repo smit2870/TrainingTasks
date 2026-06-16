@@ -9,5 +9,7 @@ namespace taskmanagement.Models.DTOs.User
         public required string Email { get; set; }
         public UserRole Role { get; set; }
         public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+
     }
 }
