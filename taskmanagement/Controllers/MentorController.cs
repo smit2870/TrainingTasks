@@ -1,15 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
-using taskmanagement.Models.DTOs.Trainee;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using taskmanagement.Models.Enums;
 using taskmanagement.Models.DTOs.Mentor;
 using taskmanagement.Services;
 
 namespace taskmanagement.Controllers
 {
-    [Authorize(Roles = "Admin,Mentor")]
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin,Mentor")]
     public class MentorController : ControllerBase
     {
         private readonly IMentorService _service;
@@ -22,19 +22,13 @@ namespace taskmanagement.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] MentorStatus? status, [FromQuery] int pageNumber, [FromQuery] int pageSize)
+        public async Task<IActionResult> GetAll(string? search, MentorStatus? status, int pageNumber, int pageSize)
         {
             if (pageNumber <= 0 || pageSize <= 0)
-            {
-                _logger.LogWarning("Invalid pagination params PageNumber={PageNumber}, PageSize={PageSize}", pageNumber, pageSize);
-
                 return BadRequest("pageNumber and pageSize must be greater than 0");
-            }
 
-            var result = await _service.GetAll(search,status,pageNumber,pageSize);
+            var result = await _service.GetAll(search, status, pageNumber, pageSize);
             var mapped = result.Data.Select(t => _service.MapToDto(t)).ToList();
-
-            _logger.LogInformation("Trainees fetched Page={Page}, Size={Size}, Count={Count}", pageNumber, pageSize, mapped.Count);
 
             return Ok(new
             {
@@ -48,53 +42,54 @@ namespace taskmanagement.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var mentor = await _service.GetById(id);
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if(mentor == null)
-            {
-                _logger.LogWarning("Mentor not found Id={Id}",id);
-                return NotFound(new { message = "Mentor not found"});
-            }
-            _logger.LogInformation("Mentor not found Id={Id}",id);
+            var mentor = await _service.GetById(id, userId, role!);
+
+            if (mentor == null)
+                return NotFound(new { message = "Mentor not found" });
+
             return Ok(_service.MapToDto(mentor));
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> create([FromBody] CreateMentorDto dto)
+        public async Task<IActionResult> Create(CreateMentorDto dto)
         {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid trainee creation request");
-                return BadRequest(ModelState);
-            }
-
             var mentor = await _service.Create(dto);
 
-            return CreatedAtAction(nameof(GetById), new {id = mentor.Id},_service.MapToDto(mentor));
+            return CreatedAtAction(nameof(GetById),
+                new { id = mentor.Id },
+                _service.MapToDto(mentor));
         }
 
+        [Authorize(Roles = "Admin,Mentor")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateById(int id, [FromBody] UpdateMentorDto dto)
+        public async Task<IActionResult> UpdateById(int id, UpdateMentorDto dto)
         {
-            var mentor = await _service.Update(id, dto);
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if(mentor == null)
-            {
-                return NotFound(new { message = "Mentor not found"});    
-            }
+            var mentor = await _service.Update(id, dto, userId, role!);
+
+            if (mentor == null)
+                return NotFound(new { message = "Mentor not found" });
 
             return Ok(_service.MapToDto(mentor));
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteById(int id)
         {
-            var mentor = await _service.Delete(id);
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if(mentor == false)
-            {
-                return NotFound(new { message = "Mentor not found"});
-            }
+            var deleted = await _service.Delete(id, userId, role!);
+
+            if (!deleted)
+                return NotFound(new { message = "Mentor not found" });
 
             return NoContent();
         }

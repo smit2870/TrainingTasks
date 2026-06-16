@@ -69,20 +69,6 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<Trainee?> GetById(int id)
-        {
-            try
-            {
-                var trainee = await _context.Trainees.FindAsync(id);
-                return trainee;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while fetching trainee Id={Id}", id);
-                throw;
-            }
-        }
-
         public async Task<Trainee> Create(AddTraineeDto dto)
         {
             try
@@ -112,72 +98,74 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<Trainee?> Update(int id, UpdateTraineeDto dto)
+        public async Task<Trainee?> GetById(int id, int currentUserId, string role)
         {
-            try
-            {
-                var trainee = await _context.Trainees.FindAsync(id);
+            var trainee = await _context.Trainees.FindAsync(id);
 
-                if (trainee == null)
-                {
-                    _logger.LogWarning("Update failed. Trainee not found Id={Id}", id);
-                    return null;
-                }
+            if (trainee == null)
+                return null;
 
-                _logger.LogInformation("Updating trainee Id={Id}", id);
-
-                if (!string.IsNullOrEmpty(dto.FirstName))
-                    trainee.FirstName = dto.FirstName;
-
-                if (!string.IsNullOrEmpty(dto.LastName))
-                    trainee.LastName = dto.LastName;
-
-                if (!string.IsNullOrEmpty(dto.Email))
-                    trainee.Email = dto.Email;
-
-                if (!string.IsNullOrEmpty(dto.TechStack))
-                    trainee.TechStack = dto.TechStack;
-
-                trainee.Status = dto.Status;
-                trainee.UpdatedDate = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Trainee updated successfully Id={Id}", id);
-
+            if (role == "Admin" || role == "Mentor")
                 return trainee;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while updating trainee Id={Id}", id);
-                throw;
-            }
+
+            if (role == "Trainee" && trainee.Id != currentUserId)
+                throw new UnauthorizedAccessException("Access denied");
+
+            return trainee;
         }
 
-        public async Task<bool> Delete(int id)
+
+        public async Task<Trainee?> Update(int id, UpdateTraineeDto dto, int currentUserId, string role)
         {
-            try
+            var trainee = await _context.Trainees.FindAsync(id);
+
+            if (trainee == null)
+                return null;
+
+            if (role != "Admin")
             {
-                var trainee = await _context.Trainees.FindAsync(id);
+                if (role == "Trainee" && trainee.Id != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied");
 
-                if (trainee == null)
-                {
-                    _logger.LogWarning("Delete failed. Trainee not found Id={Id}", id);
-                    return false;
-                }
-
-                _context.Trainees.Remove(trainee);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Trainee deleted successfully Id={Id}", id);
-
-                return true;
+                if (role == "Mentor")
+                    throw new UnauthorizedAccessException("Mentor cannot update trainees");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while deleting trainee Id={Id}", id);
-                throw;
-            }
+
+            if (!string.IsNullOrEmpty(dto.FirstName))
+                trainee.FirstName = dto.FirstName;
+
+            if (!string.IsNullOrEmpty(dto.LastName))
+                trainee.LastName = dto.LastName;
+
+            if (!string.IsNullOrEmpty(dto.Email))
+                trainee.Email = dto.Email;
+
+            if (!string.IsNullOrEmpty(dto.TechStack))
+                trainee.TechStack = dto.TechStack;
+
+            trainee.Status = dto.Status;
+            trainee.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return trainee;
+        }
+
+
+        public async Task<bool> Delete(int id, int currentUserId, string role)
+        {
+            var trainee = await _context.Trainees.FindAsync(id);
+
+            if (trainee == null)
+                return false;
+
+            if (role != "Admin")
+                throw new UnauthorizedAccessException("Only Admin can delete trainees");
+
+            _context.Trainees.Remove(trainee);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         public TraineeResponseDto MapToDto(Trainee trainee)

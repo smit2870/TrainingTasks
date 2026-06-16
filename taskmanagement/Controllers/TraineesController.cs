@@ -3,6 +3,7 @@ using taskmanagement.Models.DTOs.Trainee;
 using Microsoft.AspNetCore.Authorization;
 using taskmanagement.Models.Enums;
 using taskmanagement.Services;
+using System.Security.Claims;
 
 namespace taskmanagement.Controllers
 {
@@ -45,21 +46,6 @@ namespace taskmanagement.Controllers
             });
         }
 
-        [Authorize(Roles = "Admin,Mentor")]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var trainee = await _service.GetById(id);
-
-            if (trainee == null)
-            {
-                _logger.LogWarning("Trainee not found Id={Id}", id);
-                return NotFound(new { message = "Trainee not found" });
-            }
-            _logger.LogInformation("Trainee found Id={Id}",id);
-            return Ok(_service.MapToDto(trainee));
-        }
-
         [Authorize(Roles = "Admin]")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AddTraineeDto dto)
@@ -77,11 +63,15 @@ namespace taskmanagement.Controllers
                 _service.MapToDto(newTrainee));
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateById(int id, [FromBody] UpdateTraineeDto dto)
+
+        [Authorize(Roles = "Admin,Mentor,Trainee")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
         {
-            var trainee = await _service.Update(id, dto);
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var trainee = await _service.GetById(id, userId, role!);
 
             if (trainee == null)
                 return NotFound(new { message = "Trainee not found" });
@@ -89,11 +79,31 @@ namespace taskmanagement.Controllers
             return Ok(_service.MapToDto(trainee));
         }
 
+
+        [Authorize(Roles = "Admin,Trainee")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateById(int id, [FromBody] UpdateTraineeDto dto)
+        {
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var trainee = await _service.Update(id, dto, userId, role!);
+
+            if (trainee == null)
+                return NotFound(new { message = "Trainee not found" });
+
+            return Ok(_service.MapToDto(trainee));
+        }
+
+
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteById(int id)
         {
-            var deleted = await _service.Delete(id);
+            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var deleted = await _service.Delete(id, userId, role!);
 
             if (!deleted)
                 return NotFound(new { message = "Trainee not found" });
