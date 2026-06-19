@@ -25,6 +25,8 @@ namespace taskmanagement.Data
         public DbSet<Submission> Submission { get; set; }
 
         public DbSet<Review> Review { get; set; }
+
+        public DbSet<SubmissionFile> SubmissionFiles { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
