@@ -168,6 +168,50 @@ namespace taskmanagement.Migrations
                     b.ToTable("Submission");
                 });
 
+            modelBuilder.Entity("taskmanagement.Models.Entities.SubmissionFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Checksum")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UploadedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("SubmissionFiles");
+                });
+
             modelBuilder.Entity("taskmanagement.Models.Entities.TaskAssignment", b =>
                 {
                     b.Property<int>("Id")
@@ -289,9 +333,9 @@ namespace taskmanagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 6, 15, 7, 10, 58, 638, DateTimeKind.Utc).AddTicks(6710),
+                            CreatedDate = new DateTime(2026, 6, 19, 3, 59, 20, 408, DateTimeKind.Utc).AddTicks(1116),
                             Email = "admin@test.com",
-                            PasswordHash = "$2a$11$DJ3eaG3NDVoeAfTmLhRym.AleC8bu9KaE/ksqXXLbysPJ4qJH7V6q",
+                            PasswordHash = "$2a$11$IUzJUEEAYyAsvRN0IyG66exKjOqDuBpqpKT.mJ2z0Vr6srMSJgvye",
                             Role = 1,
                             UpdatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Username = "admin"
@@ -326,6 +370,17 @@ namespace taskmanagement.Migrations
                         .IsRequired();
 
                     b.Navigation("TaskAssignment");
+                });
+
+            modelBuilder.Entity("taskmanagement.Models.Entities.SubmissionFile", b =>
+                {
+                    b.HasOne("taskmanagement.Models.Entities.Submission", "Submission")
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
                 });
 
             modelBuilder.Entity("taskmanagement.Models.Entities.TaskAssignment", b =>
