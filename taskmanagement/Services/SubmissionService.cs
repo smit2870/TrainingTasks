@@ -3,6 +3,7 @@ using taskmanagement.Models.Entities;
 using taskmanagement.Models.Enums;
 using taskmanagement.Models.DTOs.Submission;
 using taskmanagement.Data;
+using System.Security.Cryptography;
 
 namespace taskmanagement.Services
 {
@@ -10,11 +11,15 @@ namespace taskmanagement.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<SubmissionService> _logger;
+        private readonly IFileStorageService _storage;
+        private readonly FileValidator _validator;
         
-        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger)
+        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator)
         {
             _context = context;
             _logger = logger;
+            _storage = storage;
+            _validator = validator;
         }
 
         public async Task<Submission> CreateSubmission(CreateSubmissionDto dto)
@@ -102,5 +107,68 @@ namespace taskmanagement.Services
                 Status = s.Status
             };
         }
+
+        public async Task<SubmissionFile> UploadFile(int submissionId, IFormFile file, string userName)
+            {
+                _validator.Validate(file);
+                
+                var submission = await _context.Submission.FindAsync(submissionId);
+                if (submission == null)
+                    throw new Exception("Submission not found");
+
+                string storageName;
+                using (var stream = file.OpenReadStream())
+                {
+                    storageName = await _storage.SaveAsync(stream, file.ContentType);
+                }
+
+                using var sha256 = SHA256.Create();
+                using var fs = file.OpenReadStream();
+                var hash = Convert.ToHexString(await sha256.ComputeHashAsync(fs));
+
+                var entity = new SubmissionFile
+                {
+                    SubmissionId = submissionId,
+                    OriginalFileName = file.FileName,
+                    StorageName = storageName,
+                    ContentType = file.ContentType,
+                    Size = file.Length,
+                    Checksum = hash,
+                    UploadedBy = userName,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _context.SubmissionFiles.Add(entity);
+                await _context.SaveChangesAsync();
+
+                return entity;
+            }
+
+            public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId)
+            {
+                var file = await _context.SubmissionFiles.FindAsync(fileId);
+                if (file == null)
+                    throw new Exception("File not found");
+
+                if (!await _storage.ExistsAsync(file.StorageName))
+                    throw new Exception("File missing in storage");
+
+                var stream = await _storage.OpenReadAsync(file.StorageName);
+
+                return (stream, file);
+            }
+
+            public async Task DeleteFile(int fileId)
+            {
+                var file = await _context.SubmissionFiles.FindAsync(fileId);
+                if (file == null)
+                    throw new Exception("File not found");
+
+                await _storage.DeleteAsync(file.StorageName);
+
+                _context.SubmissionFiles.Remove(file);
+                await _context.SaveChangesAsync();
+    }
+
     }
 }

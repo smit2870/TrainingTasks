@@ -11,5 +11,9 @@ namespace taskmanagement.Services
         Task<IEnumerable<Submission>> GetAll();
         Task<Submission?> GetById(int id);
         SubmissionResponseDto MapToDto(Submission submission);
+
+        Task<SubmissionFile> UploadFile(int submissionId, IFormFile file, string userName);
+        Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId);
+        Task DeleteFile(int fileId);
     }
 }

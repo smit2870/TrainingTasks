@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using taskmanagement.Services;
 using taskmanagement.Middlewares;
 using DotNetEnv;
+using taskmanagement.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,6 +80,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+// File storage
+
+builder.Services.Configure<FileStorageOptions>(
+    builder.Configuration.GetSection("FileStorage"));
+
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 
@@ -130,6 +136,8 @@ builder.Services.AddScoped<ReviewValidator>();
 builder.Services.AddScoped<IRerviewService, ReviewService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<UserValidator>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<FileValidator>();
 
 
 var app = builder.Build();
