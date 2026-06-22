@@ -41,7 +41,7 @@ namespace taskmanagement.Services
             {
                 var options = new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = ttl ?? TimeSpan.FromMinutes(5)
+                    AbsoluteExpirationRelativeToNow = ttl ?? TimeSpan.FromMinutes(60)
                 };
 
                 var json = JsonSerializer.Serialize(data);

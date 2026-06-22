@@ -13,13 +13,15 @@ namespace taskmanagement.Services
         private readonly ILogger<SubmissionService> _logger;
         private readonly IFileStorageService _storage;
         private readonly FileValidator _validator;
-        
-        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator)
+        private readonly ICacheService _cache;
+
+        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache)
         {
             _context = context;
             _logger = logger;
             _storage = storage;
             _validator = validator;
+            _cache = cache;
         }
 
         public async Task<Submission> CreateSubmission(CreateSubmissionDto dto)
@@ -44,9 +46,11 @@ namespace taskmanagement.Services
 
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("Assignment Task Resubmitted successfully");
+
+                    await _cache.RemoveAsync($"submission:{existing.Id}");
                     return existing;
                 }
-                
+
                 var submission = new Submission
                 {
                     TaskAssignmentId = dto.TaskAssignmentId,
@@ -60,11 +64,12 @@ namespace taskmanagement.Services
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Assignment Task submitted successfully.");
 
+                await _cache.RemoveAsync($"submission:{submission.Id}");
                 return submission;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                _logger.LogError(e,"Error while submitting task.");
+                _logger.LogError(e, "Error while submitting task.");
                 throw;
             }
         }
@@ -75,26 +80,51 @@ namespace taskmanagement.Services
             {
                 return await _context.Submission.ToListAsync();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                _logger.LogError(e,"Error while Getting task submission data.");
+                _logger.LogError(e, "Error while Getting task submission data.");
                 throw;
             }
         }
         public async Task<Submission?> GetById(int id)
         {
+            string cacheKey = $"submission:{id}";
+
             try
             {
-                return await _context.Submission.FindAsync(id);
+                var cached = await _cache.GetAsync<Submission>(cacheKey);
+
+                if (cached != null)
+                {
+                    _logger.LogInformation("Cache HIT: {Key}", cacheKey);
+                    return cached;
+                }
+
+                _logger.LogInformation("Cache MISS: {Key}", cacheKey);
             }
-            catch(Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error while Getting task submission Id={Id}",id);
-                throw;
+                _logger.LogError(ex, "Cache read failed");
             }
+
+            var submission = await _context.Submission.FindAsync(id);
+
+            if (submission == null)
+                return null;
+
+            try
+            {
+                await _cache.SetAsync(cacheKey, submission, TimeSpan.FromMinutes(60));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cache set failed");
+            }
+
+            return submission;
+
         }
 
- 
         public SubmissionResponseDto MapToDto(Submission s)
         {
             return new SubmissionResponseDto
@@ -109,66 +139,67 @@ namespace taskmanagement.Services
         }
 
         public async Task<SubmissionFile> UploadFile(int submissionId, IFormFile file, string userName)
+        {
+            _validator.Validate(file);
+
+            var submission = await _context.Submission.FindAsync(submissionId);
+            if (submission == null)
+                throw new Exception("Submission not found");
+
+            string storageName;
+            using (var stream = file.OpenReadStream())
             {
-                _validator.Validate(file);
-                
-                var submission = await _context.Submission.FindAsync(submissionId);
-                if (submission == null)
-                    throw new Exception("Submission not found");
-
-                string storageName;
-                using (var stream = file.OpenReadStream())
-                {
-                    storageName = await _storage.SaveAsync(stream, file.ContentType);
-                }
-
-                using var sha256 = SHA256.Create();
-                using var fs = file.OpenReadStream();
-                var hash = Convert.ToHexString(await sha256.ComputeHashAsync(fs));
-
-                var entity = new SubmissionFile
-                {
-                    SubmissionId = submissionId,
-                    OriginalFileName = file.FileName,
-                    StorageName = storageName,
-                    ContentType = file.ContentType,
-                    Size = file.Length,
-                    Checksum = hash,
-                    UploadedBy = userName,
-                    UploadedAt = DateTime.UtcNow
-                };
-
-                _context.SubmissionFiles.Add(entity);
-                await _context.SaveChangesAsync();
-
-                return entity;
+                storageName = await _storage.SaveAsync(stream, file.ContentType);
             }
 
-            public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId)
+            using var sha256 = SHA256.Create();
+            using var fs = file.OpenReadStream();
+            var hash = Convert.ToHexString(await sha256.ComputeHashAsync(fs));
+
+            var entity = new SubmissionFile
             {
-                var file = await _context.SubmissionFiles.FindAsync(fileId);
-                if (file == null)
-                    throw new Exception("File not found");
+                SubmissionId = submissionId,
+                OriginalFileName = file.FileName,
+                StorageName = storageName,
+                ContentType = file.ContentType,
+                Size = file.Length,
+                Checksum = hash,
+                UploadedBy = userName,
+                UploadedAt = DateTime.UtcNow
+            };
 
-                if (!await _storage.ExistsAsync(file.StorageName))
-                    throw new Exception("File missing in storage");
+            _context.SubmissionFiles.Add(entity);
+            await _context.SaveChangesAsync();
 
-                var stream = await _storage.OpenReadAsync(file.StorageName);
+            await _cache.RemoveAsync($"submission:{submissionId}");
+            return entity;
+        }
 
-                return (stream, file);
-            }
+        public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId)
+        {
+            var file = await _context.SubmissionFiles.FindAsync(fileId);
+            if (file == null)
+                throw new Exception("File not found");
 
-            public async Task DeleteFile(int fileId)
-            {
-                var file = await _context.SubmissionFiles.FindAsync(fileId);
-                if (file == null)
-                    throw new Exception("File not found");
+            if (!await _storage.ExistsAsync(file.StorageName))
+                throw new Exception("File missing in storage");
 
-                await _storage.DeleteAsync(file.StorageName);
+            var stream = await _storage.OpenReadAsync(file.StorageName);
 
-                _context.SubmissionFiles.Remove(file);
-                await _context.SaveChangesAsync();
-    }
+            return (stream, file);
+        }
 
+        public async Task DeleteFile(int fileId)
+        {
+            var file = await _context.SubmissionFiles.FindAsync(fileId);
+            if (file == null)
+                throw new Exception("File not found");
+
+            await _storage.DeleteAsync(file.StorageName);
+
+            _context.SubmissionFiles.Remove(file);
+            await _context.SaveChangesAsync();
+            await _cache.RemoveAsync($"submission:{file.SubmissionId}");
+        }
     }
 }
