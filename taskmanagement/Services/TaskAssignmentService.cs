@@ -12,12 +12,14 @@ namespace taskmanagement.Services
         private readonly AppDbContext _context;
         private readonly ILogger<TaskAssignmentService> _logger;
         private readonly TaskAssignmentValidator _validator;
+        private readonly ICacheService _cache;
 
-        public TaskAssignmentService(AppDbContext context, ILogger<TaskAssignmentService> logger, TaskAssignmentValidator validator)
+        public TaskAssignmentService(AppDbContext context, ILogger<TaskAssignmentService> logger, TaskAssignmentValidator validator, ICacheService cache)
         {
             _context = context;
             _logger = logger;
             _validator = validator;
+            _cache = cache;
         }
 
         public async Task<PagedResponse<TaskAssignment>> GetAll(int? traineeId, int? mentorId, TaskAssignmentStatus? status, int pageNumber, int pageSize)
@@ -72,9 +74,20 @@ namespace taskmanagement.Services
 
         public async Task<TaskAssignment?> GetById(int id)
         {
+            string cacheKey = $"task-assignment:{id}";
             try
             {
+                var cached = await _cache.GetAsync<TaskAssignment>(cacheKey);
+
+                if(cached != null)
+                {
+                    _logger.LogInformation("Cache HIT: {Key}", cacheKey);
+                    return cached;
+                }
+                _logger.LogInformation("Cache MISS: {Key}", cacheKey); 
+
                 var assignment = await _context.TaskAssignment.FindAsync(id);
+                await _cache.SetAsync(cacheKey, assignment, TimeSpan.FromMinutes(60));
                 return assignment;
             }
             catch (Exception ex)
@@ -137,6 +150,7 @@ namespace taskmanagement.Services
                 assignment.Remarks = dto.Remarks;
 
                 await _context.SaveChangesAsync();
+                await _cache.RemoveAsync($"task-assignment:{id}");
 
                 _logger.LogInformation("TaskAssignment status updated Id={Id}", id);
 
