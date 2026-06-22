@@ -11,11 +11,14 @@ namespace taskmanagement.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<TraineeService> _logger;
+        private readonly ICacheService _cache;
 
-        public TraineeService(AppDbContext context, ILogger<TraineeService> logger)
+
+        public TraineeService(AppDbContext context, ILogger<TraineeService> logger, ICacheService cache)
         {
             _context = context;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<PagedResponse<Trainee>> GetAll(string? search, TraineeStatus? status, int pageNumber, int pageSize)
@@ -26,8 +29,6 @@ namespace taskmanagement.Services
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
-                    _logger.LogInformation("Searching trainees with keyword={Search}", search);
-
                     search = search.ToLower();
 
                     query = query.Where(t =>
@@ -40,7 +41,6 @@ namespace taskmanagement.Services
 
                 if (status.HasValue)
                 {
-                    _logger.LogInformation("Filtering trainees with status={Status}", status);
                     query = query.Where(t => t.Status == status.Value);
                 }
 
@@ -50,9 +50,6 @@ namespace taskmanagement.Services
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
-
-                _logger.LogInformation("Fetched trainees list Count={Count}, Page={Page}, Size={Size}",
-                    data.Count, pageNumber, pageSize);
 
                 return new PagedResponse<Trainee>
                 {
@@ -88,7 +85,6 @@ namespace taskmanagement.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Trainee created successfully Id={Id}", trainee.Id);
-
                 return trainee;
             }
             catch (Exception ex)
@@ -100,16 +96,38 @@ namespace taskmanagement.Services
 
         public async Task<Trainee?> GetById(int id, int currentUserId, string role)
         {
+            string cacheKey = $"trainee:{id}";
+            try
+            {
+                var cached = await _cache.GetAsync<Trainee>(cacheKey);
+
+                if (cached != null)
+                {
+                    _logger.LogInformation("Cache HIT: {Key}", cacheKey);
+                    return cached;
+                }
+                _logger.LogInformation("Cache MISS: {Key}", cacheKey);     
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cache read failed");
+            }
+            
             var trainee = await _context.Trainees.FindAsync(id);
 
             if (trainee == null)
                 return null;
 
             if (role == "Admin" || role == "Mentor")
+            {
+                await _cache.SetAsync(cacheKey, trainee, TimeSpan.FromMinutes(60));
                 return trainee;
-
+            }
+            
             if (role == "Trainee" && trainee.Id != currentUserId)
                 throw new UnauthorizedAccessException("Access denied");
+
+            await _cache.SetAsync(cacheKey, trainee, TimeSpan.FromMinutes(60));
 
             return trainee;
         }
@@ -147,6 +165,8 @@ namespace taskmanagement.Services
             trainee.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            
+            await _cache.RemoveAsync($"trainee:{id}");
 
             return trainee;
         }
@@ -164,6 +184,8 @@ namespace taskmanagement.Services
 
             _context.Trainees.Remove(trainee);
             await _context.SaveChangesAsync();
+
+            await _cache.RemoveAsync($"trainee:{id}");
 
             return true;
         }
