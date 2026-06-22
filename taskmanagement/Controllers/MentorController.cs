@@ -42,7 +42,7 @@ namespace taskmanagement.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
             var mentor = await _service.GetById(id, userId, role!);
@@ -68,7 +68,7 @@ namespace taskmanagement.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateById(int id, UpdateMentorDto dto)
         {
-            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
             var mentor = await _service.Update(id, dto, userId, role!);
@@ -83,7 +83,7 @@ namespace taskmanagement.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteById(int id)
         {
-            var userId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
             var deleted = await _service.Delete(id, userId, role!);
