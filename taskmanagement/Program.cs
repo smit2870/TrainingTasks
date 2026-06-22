@@ -64,6 +64,14 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+//  Redis
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration["Redis:ConnectionString"];
+    options.InstanceName = "TaskManagement:";
+});
+
 
 //  CORS
 builder.Services.AddCors(options =>
@@ -138,7 +146,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<UserValidator>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<FileValidator>();
-
+builder.Services.AddScoped<ICacheService, CacheService>();
 
 var app = builder.Build();
 
