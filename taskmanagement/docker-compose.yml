@@ -18,9 +18,26 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
-  
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE}
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rmquser
+      RABBITMQ_DEFAULT_PASS: rmqpass
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
+
+
 volumes:
   mysql_data:
+  rabbitmq_data:
 
 networks:
   app-network:
