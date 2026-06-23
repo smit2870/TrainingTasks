@@ -95,7 +95,7 @@ namespace taskmanagement.Controllers
             }
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin,Trainee")]
         [HttpGet("submission-files/{id}/download")]
         public async Task<IActionResult> Download(int id)
         {
@@ -110,7 +110,7 @@ namespace taskmanagement.Controllers
             }
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin,Trainee")]
         [HttpDelete("submission-files/{id}")]
         public async Task<IActionResult> Delete(int id)
         {

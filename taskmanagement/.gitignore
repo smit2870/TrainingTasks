@@ -5,6 +5,6 @@ storage/
 Migrations/
 
 appsettings.Development.json
-docker-compose.yml
+dump.sql
 
 .env

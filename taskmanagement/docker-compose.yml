@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: ${REDIS_IMAGE}
+    container_name: redis
+    ports: 
+    - "6379:6379"
+
+  mysql:
+    image: ${MYSQL_IMAGE}
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+  
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+
