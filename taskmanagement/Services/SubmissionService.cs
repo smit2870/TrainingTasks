@@ -14,14 +14,16 @@ namespace taskmanagement.Services
         private readonly IFileStorageService _storage;
         private readonly FileValidator _validator;
         private readonly ICacheService _cache;
+        private readonly IAuthorizationService _authService;
 
-        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache)
+        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache, IAuthorizationService authorization)
         {
             _context = context;
             _logger = logger;
             _storage = storage;
             _validator = validator;
             _cache = cache;
+            _authService = authorization;
         }
 
         public async Task<Submission> CreateSubmission(CreateSubmissionDto dto)
@@ -86,8 +88,9 @@ namespace taskmanagement.Services
                 throw;
             }
         }
-        public async Task<SubmissionResponseDto?> GetById(int id)
+        public async Task<SubmissionResponseDto?> GetById(int id, int userId, string role)
         {
+            await _authService.CheckSubmissionAccess(id, userId, role);
             string cacheKey = $"submission:{id}";
 
             try
@@ -175,8 +178,10 @@ namespace taskmanagement.Services
             return entity;
         }
 
-        public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId)
+        public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId, int userId, string role)
         {
+            await _authService.CheckFileAccess(fileId, userId, role);
+
             var file = await _context.SubmissionFiles.FindAsync(fileId);
             if (file == null)
                 throw new Exception("File not found");
@@ -189,8 +194,10 @@ namespace taskmanagement.Services
             return (stream, file);
         }
 
-        public async Task DeleteFile(int fileId)
+        public async Task DeleteFile(int fileId, int userId, string role)
         {
+            await _authService.CheckFileAccess(fileId, userId, role);
+            
             var file = await _context.SubmissionFiles.FindAsync(fileId);
             if (file == null)
                 throw new Exception("File not found");

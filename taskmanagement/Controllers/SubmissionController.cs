@@ -58,7 +58,8 @@ namespace taskmanagement.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _service.GetById(id);
+            var (userId, role) = GetUserContext();
+            var result = await _service.GetById(id, userId, role);
 
             if (result == null)
                 return NotFound(new {message = "Submission not found."});
@@ -101,7 +102,8 @@ namespace taskmanagement.Controllers
         {
             try
             {
-                var (stream, file) = await _service.DownloadFile(id);
+                var (userId, role) = GetUserContext();
+                var (stream, file) = await _service.DownloadFile(id, userId, role);
                 return File(stream, file.ContentType, file.OriginalFileName);
             }
             catch (Exception)
@@ -116,13 +118,23 @@ namespace taskmanagement.Controllers
         {
             try
             {
-                await _service.DeleteFile(id);
+                var (userId, role) = GetUserContext();
+                await _service.DeleteFile(id, userId, role);
                 return NoContent();
             }
             catch (Exception)
             {
                 return NotFound();
             }
+        }
+
+        
+        private (int userId, string role) GetUserContext()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var role = User.FindFirst(ClaimTypes.Role)!.Value;
+
+            return (userId, role);
         }
 
     }

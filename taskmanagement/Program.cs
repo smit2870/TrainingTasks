@@ -147,6 +147,7 @@ builder.Services.AddScoped<UserValidator>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<FileValidator>();
 builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
 var app = builder.Build();
 
