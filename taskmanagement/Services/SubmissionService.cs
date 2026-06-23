@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using taskmanagement.Models.Entities;
 using taskmanagement.Models.Enums;
 using taskmanagement.Models.DTOs.Submission;
+using taskmanagement.Models.Messaging;
 using taskmanagement.Data;
 using System.Security.Cryptography;
 
@@ -15,8 +16,9 @@ namespace taskmanagement.Services
         private readonly FileValidator _validator;
         private readonly ICacheService _cache;
         private readonly IAuthorizationService _authService;
+        private readonly IRabbitMqPublisher _publisher;
 
-        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache, IAuthorizationService authorization)
+        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache, IAuthorizationService authorization, IRabbitMqPublisher publisher)
         {
             _context = context;
             _logger = logger;
@@ -24,6 +26,7 @@ namespace taskmanagement.Services
             _validator = validator;
             _cache = cache;
             _authService = authorization;
+            _publisher = publisher;
         }
 
         public async Task<Submission> CreateSubmission(CreateSubmissionDto dto)
@@ -47,6 +50,7 @@ namespace taskmanagement.Services
                     existing.Status = SubmissionStatus.Resubmitted;
 
                     await _context.SaveChangesAsync();
+
                     _logger.LogInformation("Assignment Task Resubmitted successfully");
 
                     await _cache.RemoveAsync($"submission:{existing.Id}");
@@ -173,6 +177,25 @@ namespace taskmanagement.Services
 
             _context.SubmissionFiles.Add(entity);
             await _context.SaveChangesAsync();
+
+            var message = new SubmissionProcessingRequested
+            {
+                MessageId = Guid.NewGuid(),
+                CorrelationId = Guid.NewGuid(),
+                SubmissionId = submissionId,
+                FileId = entity.Id,
+                RequestedAt = DateTime.UtcNow
+            };
+
+            var published = await _publisher.PublishAsync(message);
+
+            if (!published)
+            {
+                _logger.LogWarning("Message NOT published for SubmissionId: {SubmissionId}", submissionId);
+                throw new Exception("Failed to enqueue processing job");
+            }
+
+            _logger.LogInformation("Queued processing | MsgId: {MsgId}, SubId: {SubId}, FileId: {FileId}",message.MessageId,submissionId,entity.Id);
 
             await _cache.RemoveAsync($"submission:{submissionId}");
             return entity;

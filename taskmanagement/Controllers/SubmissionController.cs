@@ -79,15 +79,10 @@ namespace taskmanagement.Controllers
             {
                 var result = await _service.UploadFile(submissionId, dto.File, userName);
 
-                return Created($"/api/submission-files/{result.Id}", new
+                return Accepted(new
                 {
-                    result.Id,
-                    result.SubmissionId,
-                    result.OriginalFileName,
-                    result.ContentType,
-                    result.Size,
-                    result.UploadedBy,
-                    result.UploadedAt
+                    message = "File uploaded and queued for processing",
+                    fileId = result.Id
                 });
             }
             catch (Exception ex)
