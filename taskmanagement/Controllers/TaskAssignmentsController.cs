@@ -57,7 +57,7 @@ namespace taskmanagement.Controllers
                 if (entity == null)
                     return NotFound($"TaskAssignment not found with Id={id}");
 
-                return Ok(_service.MapToDto(entity));
+                return Ok(entity);
             }
             catch (Exception e)
             {

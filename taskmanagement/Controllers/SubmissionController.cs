@@ -63,7 +63,7 @@ namespace taskmanagement.Controllers
             if (result == null)
                 return NotFound(new {message = "Submission not found."});
 
-            return Ok(_service.MapToDto(result));
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin,Trainee")]

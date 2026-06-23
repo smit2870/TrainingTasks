@@ -94,12 +94,12 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<Trainee?> GetById(int id, int currentUserId, string role)
+        public async Task<TraineeResponseDto?> GetById(int id, int currentUserId, string role)
         {
             string cacheKey = $"trainee:{id}";
             try
             {
-                var cached = await _cache.GetAsync<Trainee>(cacheKey);
+                var cached = await _cache.GetAsync<TraineeResponseDto>(cacheKey);
 
                 if (cached != null)
                 {
@@ -117,19 +117,15 @@ namespace taskmanagement.Services
 
             if (trainee == null)
                 return null;
-
-            if (role == "Admin" || role == "Mentor")
-            {
-                await _cache.SetAsync(cacheKey, trainee, TimeSpan.FromMinutes(60));
-                return trainee;
-            }
             
             if (role == "Trainee" && trainee.Id != currentUserId)
                 throw new UnauthorizedAccessException("Access denied");
+            
+            var dto = MapToDto(trainee);
 
-            await _cache.SetAsync(cacheKey, trainee, TimeSpan.FromMinutes(60));
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(60));
 
-            return trainee;
+            return dto;
         }
 
 

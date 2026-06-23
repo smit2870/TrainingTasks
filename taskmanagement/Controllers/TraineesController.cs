@@ -81,7 +81,7 @@ namespace taskmanagement.Controllers
             if (trainee == null)
                 return NotFound(new { message = "Trainee not found" });
 
-            return Ok(_service.MapToDto(trainee));
+            return Ok(trainee);
         }
 
 

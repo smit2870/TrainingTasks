@@ -9,7 +9,7 @@ namespace taskmanagement.Services
         
         Task<Submission> CreateSubmission(CreateSubmissionDto dto);
         Task<IEnumerable<Submission>> GetAll();
-        Task<Submission?> GetById(int id);
+        Task<SubmissionResponseDto?> GetById(int id);
         SubmissionResponseDto MapToDto(Submission submission);
 
         Task<SubmissionFile> UploadFile(int submissionId, IFormFile file, string userName);

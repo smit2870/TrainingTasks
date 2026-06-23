@@ -72,12 +72,12 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<TaskAssignment?> GetById(int id)
+        public async Task<TaskAssignmentResponseDto?> GetById(int id)
         {
             string cacheKey = $"task-assignment:{id}";
             try
             {
-                var cached = await _cache.GetAsync<TaskAssignment>(cacheKey);
+                var cached = await _cache.GetAsync<TaskAssignmentResponseDto>(cacheKey);
 
                 if(cached != null)
                 {
@@ -87,8 +87,9 @@ namespace taskmanagement.Services
                 _logger.LogInformation("Cache MISS: {Key}", cacheKey); 
 
                 var assignment = await _context.TaskAssignment.FindAsync(id);
-                await _cache.SetAsync(cacheKey, assignment, TimeSpan.FromMinutes(60));
-                return assignment;
+                var dto = MapToDto(assignment);
+                await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(60));
+                return dto;
             }
             catch (Exception ex)
             {

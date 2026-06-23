@@ -86,13 +86,13 @@ namespace taskmanagement.Services
                 throw;
             }
         }
-        public async Task<Submission?> GetById(int id)
+        public async Task<SubmissionResponseDto?> GetById(int id)
         {
             string cacheKey = $"submission:{id}";
 
             try
             {
-                var cached = await _cache.GetAsync<Submission>(cacheKey);
+                var cached = await _cache.GetAsync<SubmissionResponseDto>(cacheKey);
 
                 if (cached != null)
                 {
@@ -108,20 +108,20 @@ namespace taskmanagement.Services
             }
 
             var submission = await _context.Submission.FindAsync(id);
-
+            var dto = MapToDto(submission);
             if (submission == null)
                 return null;
 
             try
             {
-                await _cache.SetAsync(cacheKey, submission, TimeSpan.FromMinutes(60));
+                await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(60));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Cache set failed");
             }
 
-            return submission;
+            return dto;
 
         }
 
