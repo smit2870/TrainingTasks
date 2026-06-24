@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using taskmanagement.Services;
 using taskmanagement.Data;
+using taskmanagement.Models.Enums;
 
 namespace taskmanagement.Controllers
 {
@@ -27,5 +28,15 @@ namespace taskmanagement.Controllers
 
             return Ok(job);
         }
+        
+        [Authorize(Roles = "Admin")]
+        [HttpGet("status/{status}")]
+        public async Task<IActionResult> GetByStatus(JobStatus status)
+        {
+            var jobs = await _service.GetByStatusAsync(status);
+
+            return Ok(jobs);
+        }
+
     }
 }
