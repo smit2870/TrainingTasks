@@ -187,6 +187,20 @@ namespace taskmanagement.Services
                 RequestedAt = DateTime.UtcNow
             };
 
+            var processingJobs = new ProcessingJob
+            {
+                MessageId = message.MessageId,
+                CorrelationId = message.CorrelationId,
+                SubmissionId = submissionId,
+                FileId = entity.Id,
+                Status = JobStatus.Queued,
+                Attempts = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.ProcessingJobs.Add(processingJobs);
+            await _context.SaveChangesAsync();
+
             var published = await _publisher.PublishAsync(message);
 
             if (!published)
