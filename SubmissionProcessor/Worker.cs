@@ -2,6 +2,9 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using taskmanagement.Models.Messaging;
+using SubmissionProcessor.Services;
 
 namespace SubmissionProcessor;
 
@@ -9,19 +12,24 @@ public class Worker : BackgroundService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<Worker> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    private IConnection _connection;
-    private IChannel _channel;
+    private IConnection? _connection;
+    private IChannel? _channel;
 
-    public Worker(IConfiguration config, ILogger<Worker> logger)
+    public Worker(
+        IConfiguration config,
+        ILogger<Worker> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _config = config;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
-    public override async Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var factory = new ConnectionFactory()
+        var factory = new ConnectionFactory
         {
             HostName = _config["RabbitMq:Host"],
             Port = int.Parse(_config["RabbitMq:Port"] ?? "5672"),
@@ -30,79 +38,76 @@ public class Worker : BackgroundService
             VirtualHost = _config["RabbitMq:VirtualHost"] ?? "/"
         };
 
-        _connection = await factory.CreateConnectionAsync();
+        _connection = await factory.CreateConnectionAsync(stoppingToken);
+        _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        _channel = await _connection.CreateChannelAsync();
-
-        var queue = _config["RabbitMq:QueueName"] ?? "default-queue";
+        var queue = _config["RabbitMq:QueueName"]!;
 
         await _channel.QueueDeclareAsync(
             queue: queue,
             durable: true,
             exclusive: false,
-            autoDelete: false
-        );
+            autoDelete: false,
+            arguments: new Dictionary<string, object?>
+            {
+                { "x-dead-letter-exchange", "dlx-exchange" }
+            },
+            cancellationToken: stoppingToken);
 
-        await _channel.BasicQosAsync(
-            prefetchSize: 0,
-            prefetchCount: 1,
-            global: false
-        );
-
-        await base.StartAsync(cancellationToken);
-    }
-
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        var queue = _config["RabbitMq:QueueName"] ?? "default-queue";
+        await _channel.BasicQosAsync(0, 1, false, cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
-        consumer.ReceivedAsync += async (model, ea) =>
+        consumer.ReceivedAsync += async (_, ea) =>
         {
             try
             {
-                var body = ea.Body.ToArray();
-                var json = Encoding.UTF8.GetString(body);
+                var json = Encoding.UTF8.GetString(ea.Body.ToArray());
+
+                _logger.LogInformation("  ---  Message received: {Json}", json);
 
                 var message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
 
-                _logger.LogInformation(
-                    "Processing SubmissionId: {SubmissionId}, FileId: {FileId}",
-                    message?.SubmissionId,
-                    message?.FileId
-                );
+                if (message == null)
+                    throw new Exception("Invalid message");
 
-                await Task.Delay(2000);
+                using var scope = _scopeFactory.CreateScope();
 
-                await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                var processor = scope.ServiceProvider
+                    .GetRequiredService<ISubmissionProcessingService>();
+
+                await processor.ProcessAsync(message, stoppingToken);
+
+                await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+
+                _logger.LogInformation("  ----  Processed message {MessageId}", message.MessageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Processing failed");
+                _logger.LogError(ex, " ***  Processing failed");
 
-                await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                if (_channel != null)
+                {
+                    await _channel.BasicNackAsync(ea.DeliveryTag, false, false, stoppingToken);
+                }
             }
         };
 
-        _channel.BasicConsumeAsync(
-            queue: queue,
-            autoAck: false,
-            consumer: consumer
-        );
+        await _channel.BasicConsumeAsync(queue, false, consumer, stoppingToken);
 
-        _logger.LogInformation("Worker started listening to queue: {Queue}", queue);
+        _logger.LogInformation("  *** Listening to queue: {Queue}", queue);
 
-        return Task.CompletedTask;
+        while (!stoppingToken.IsCancellationRequested)
+            await Task.Delay(1000, stoppingToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         if (_channel != null)
-            await _channel.CloseAsync();
+            await _channel.CloseAsync(cancellationToken);
 
         if (_connection != null)
-            await _connection.CloseAsync();
+            await _connection.CloseAsync(cancellationToken);
 
         await base.StopAsync(cancellationToken);
     }

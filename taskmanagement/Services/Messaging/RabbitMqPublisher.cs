@@ -38,7 +38,12 @@ namespace taskmanagement.Services
                     queueName,
                     durable: true,
                     exclusive: false,
-                    autoDelete: false
+                    autoDelete: false,
+                    arguments: new Dictionary<string, object>
+                    {
+                        { "x-dead-letter-exchange", "dlx-exchange" }
+                    }
+
                 );
 
                 var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
