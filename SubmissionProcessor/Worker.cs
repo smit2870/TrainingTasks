@@ -11,13 +11,16 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
 
     private IConnection _connection;
-    private IModel _channel;
+    private IChannel _channel;
 
     public Worker(IConfiguration config, ILogger<Worker> logger)
     {
         _config = config;
         _logger = logger;
+    }
 
+    public override async Task StartAsync(CancellationToken cancellationToken)
+    {
         var factory = new ConnectionFactory()
         {
             HostName = _config["RabbitMq:Host"],
@@ -27,27 +30,35 @@ public class Worker : BackgroundService
             VirtualHost = _config["RabbitMq:VirtualHost"] ?? "/"
         };
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        _connection = await factory.CreateConnectionAsync();
 
-        var queue = _config["RabbitMq:QueueName"];
+        _channel = await _connection.CreateChannelAsync();
 
-        _channel.QueueDeclare(
+        var queue = _config["RabbitMq:QueueName"] ?? "default-queue";
+
+        await _channel.QueueDeclareAsync(
             queue: queue,
             durable: true,
             exclusive: false,
-            autoDelete: false);
+            autoDelete: false
+        );
 
-        _channel.BasicQos(0, 1, false);
+        await _channel.BasicQosAsync(
+            prefetchSize: 0,
+            prefetchCount: 1,
+            global: false
+        );
+
+        await base.StartAsync(cancellationToken);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var queue = _config["RabbitMq:QueueName"];
+        var queue = _config["RabbitMq:QueueName"] ?? "default-queue";
 
-        var consumer = new EventingBasicConsumer(_channel);
+        var consumer = new AsyncEventingBasicConsumer(_channel);
 
-        consumer.Received += async (model, ea) =>
+        consumer.ReceivedAsync += async (model, ea) =>
         {
             try
             {
@@ -63,27 +74,36 @@ public class Worker : BackgroundService
                 );
 
                 await Task.Delay(2000);
-                _channel.BasicAck(ea.DeliveryTag, false);
+
+                await _channel.BasicAckAsync(ea.DeliveryTag, false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Processing failed");
 
-                _channel.BasicNack(ea.DeliveryTag, false, true);
+                await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
             }
         };
 
-        _channel.BasicConsume(queue: queue, autoAck: false, consumer: consumer);
+        _channel.BasicConsumeAsync(
+            queue: queue,
+            autoAck: false,
+            consumer: consumer
+        );
 
         _logger.LogInformation("Worker started listening to queue: {Queue}", queue);
 
         return Task.CompletedTask;
     }
 
-    public override void Dispose()
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _channel?.Close();
-        _connection?.Close();
-        base.Dispose();
+        if (_channel != null)
+            await _channel.CloseAsync();
+
+        if (_connection != null)
+            await _connection.CloseAsync();
+
+        await base.StopAsync(cancellationToken);
     }
 }
