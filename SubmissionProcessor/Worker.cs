@@ -1,3 +1,6 @@
+
+using Microsoft.EntityFrameworkCore;
+using taskmanagement.Data;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -54,19 +57,40 @@ public class Worker : BackgroundService
             },
             cancellationToken: stoppingToken);
 
+        
+        await _channel.ExchangeDeclareAsync(
+            exchange: "dlx-exchange",
+            type: ExchangeType.Fanout
+        );
+
+        await _channel.QueueDeclareAsync(
+            queue: "submission-processing-dlq",
+            durable: true,
+            exclusive: false,
+            autoDelete: false
+        );
+
+        await _channel.QueueBindAsync(
+            queue: "submission-processing-dlq",
+            exchange: "dlx-exchange",
+            routingKey: ""
+        );
+
         await _channel.BasicQosAsync(0, 1, false, cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
         consumer.ReceivedAsync += async (_, ea) =>
         {
+            SubmissionProcessingRequested? message = null;
+
             try
             {
                 var json = Encoding.UTF8.GetString(ea.Body.ToArray());
 
                 _logger.LogInformation("  ---  Message received: {Json}", json);
 
-                var message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
+                message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
 
                 if (message == null)
                     throw new Exception("Invalid message");
@@ -88,7 +112,23 @@ public class Worker : BackgroundService
 
                 if (_channel != null)
                 {
-                    await _channel.BasicNackAsync(ea.DeliveryTag, false, false, stoppingToken);
+                    using var scope = _scopeFactory.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                    var job = await db.ProcessingJobs
+                        .FirstOrDefaultAsync(x => x.MessageId == message!.MessageId);
+
+                    bool shouldRetry = job != null && job.Attempts < 3;
+
+                    _logger.LogWarning("  ****  Retry decision for --- MsgId: {MsgId}, Attempt: {Attempt}, Retry: {Retry}",message?.MessageId, job?.Attempts, shouldRetry);
+
+                    await _channel.BasicNackAsync(
+                        ea.DeliveryTag,
+                        false,
+                        requeue: shouldRetry,
+                        stoppingToken
+                    );
+
                 }
             }
         };
