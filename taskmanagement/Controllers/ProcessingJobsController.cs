@@ -9,17 +9,18 @@ namespace taskmanagement.Controllers
     [Route("api/processing-jobs")]
     public class ProcessingJobsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IProcessingJobService _service;
 
-        public ProcessingJobsController(AppDbContext context)
+        public ProcessingJobsController(IProcessingJobService service)
         {
-            _context = context;
+            _service = service;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var job = await _context.ProcessingJobs.FindAsync(id);
+            var job = await _service.GetByIdAsync(id);
 
             if (job == null)
                 return NotFound();

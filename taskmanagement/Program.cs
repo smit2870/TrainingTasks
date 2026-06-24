@@ -149,6 +149,7 @@ builder.Services.AddScoped<FileValidator>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
 
 var app = builder.Build();
 
