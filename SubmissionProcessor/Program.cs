@@ -1,9 +1,13 @@
 using SubmissionProcessor;
+using SubmissionProcessor.Services;
+using taskmanagement.Data;
+using taskmanagement.Services;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
-using taskmanagement.Data;
+using taskmanagement.Options;
 
 var builder = Host.CreateApplicationBuilder(args);
+
 Env.Load();
 
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
@@ -16,6 +20,12 @@ var connectionString = $"server={dbHost};port={dbPort};database={dbName};user={d
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+builder.Services.Configure<FileStorageOptions>(
+    builder.Configuration.GetSection("FileStorage"));
+
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<ISubmissionProcessingService, SubmissionProcessingService>();
 
 builder.Services.AddHostedService<Worker>();
 
