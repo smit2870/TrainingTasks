@@ -15,5 +15,7 @@ namespace taskmanagement.Models.Entities
 
         public string UploadedBy { get; set; } = default!;
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<ProcessingJob> ProcessingJobs { get; set; }
+
     }
 }

@@ -17,6 +17,7 @@ namespace taskmanagement.Models.Entities
         public SubmissionStatus Status { get; set; }  
 
         public TaskAssignment? TaskAssignment { get; set; }
+        public ICollection<ProcessingJob> ProcessingJobs { get; set; }
     }
 
 }

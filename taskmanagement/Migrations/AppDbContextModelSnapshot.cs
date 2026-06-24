@@ -100,6 +100,59 @@ namespace taskmanagement.Migrations
                     b.ToTable("Mentor");
                 });
 
+            modelBuilder.Entity("taskmanagement.Models.Entities.ProcessingJob", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ErrorSummary")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("ProcessingJobs");
+                });
+
             modelBuilder.Entity("taskmanagement.Models.Entities.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -333,13 +386,32 @@ namespace taskmanagement.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 6, 19, 3, 59, 20, 408, DateTimeKind.Utc).AddTicks(1116),
+                            CreatedDate = new DateTime(2026, 6, 24, 7, 15, 11, 997, DateTimeKind.Utc).AddTicks(5101),
                             Email = "admin@test.com",
-                            PasswordHash = "$2a$11$IUzJUEEAYyAsvRN0IyG66exKjOqDuBpqpKT.mJ2z0Vr6srMSJgvye",
+                            PasswordHash = "$2a$11$vYTQJ7SKi5hwO/0VNKzxXOYJtMsChSkt2OfJLObmOpvl/jxCP7Lrq",
                             Role = 1,
                             UpdatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Username = "admin"
                         });
+                });
+
+            modelBuilder.Entity("taskmanagement.Models.Entities.ProcessingJob", b =>
+                {
+                    b.HasOne("taskmanagement.Models.Entities.SubmissionFile", "File")
+                        .WithMany("ProcessingJobs")
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("taskmanagement.Models.Entities.Submission", "Submission")
+                        .WithMany("ProcessingJobs")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("File");
+
+                    b.Navigation("Submission");
                 });
 
             modelBuilder.Entity("taskmanagement.Models.Entities.Review", b =>
@@ -408,6 +480,16 @@ namespace taskmanagement.Migrations
                     b.Navigation("Mentor");
 
                     b.Navigation("Trainee");
+                });
+
+            modelBuilder.Entity("taskmanagement.Models.Entities.Submission", b =>
+                {
+                    b.Navigation("ProcessingJobs");
+                });
+
+            modelBuilder.Entity("taskmanagement.Models.Entities.SubmissionFile", b =>
+                {
+                    b.Navigation("ProcessingJobs");
                 });
 #pragma warning restore 612, 618
         }
