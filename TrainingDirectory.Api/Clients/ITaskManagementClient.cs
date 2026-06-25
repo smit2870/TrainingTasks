@@ -4,6 +4,6 @@ namespace TrainingDirectory.Api.Clients
 {
     public interface ITaskManagementClient
     {
-        Task<TraineeDto?> GetTraineeById(int id, CancellationToken cancellationToken = default);
+        Task<TraineeDto?> GetTraineeById(int id,string token, CancellationToken cancellationToken = default);
     }
 }

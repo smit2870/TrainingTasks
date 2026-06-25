@@ -18,7 +18,9 @@ namespace TrainingDirectory.Api.Controllers
         [HttpGet("trainee/{id}")]
         public async Task<IActionResult> GetTrainee(int id, CancellationToken cancellationToken)
         {
-            var trainee = await _client.GetTraineeById(id,cancellationToken);
+            var token = Request.Headers["Authorization"].ToString();
+
+            var trainee = await _client.GetTraineeById(id,token,cancellationToken);
 
             if (trainee == null)
                 return NotFound(new { message = "Trainee not found or service unavailable" });

@@ -14,8 +14,11 @@ namespace TrainingDirectory.Api.Clients
             _logger = logger;
         }
 
-        public async Task<TraineeDto?> GetTraineeById(int id, CancellationToken cancellationToken = default)
+        public async Task<TraineeDto?> GetTraineeById(int id,string token, CancellationToken cancellationToken = default)
         {
+            
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", token);
 
             var correlationId = Guid.NewGuid().ToString();
             _httpClient.DefaultRequestHeaders.Remove("X-Correlation-Id");
@@ -25,7 +28,7 @@ namespace TrainingDirectory.Api.Clients
             {
                 try
                 {
-                    var response = await _httpClient.GetAsync($"/api/trainees/temp/{id}",cancellationToken);
+                    var response = await _httpClient.GetAsync($"/api/trainees/{id}",cancellationToken);
 
                     // ---------------  Handling failure 
 
