@@ -9,28 +9,21 @@ namespace taskmanagement.Services
     {
         private readonly IConfiguration _config;
         private readonly ILogger<RabbitMqPublisher> _logger;
+        private readonly IRabbitMqConnection _connection;
 
-        public RabbitMqPublisher(IConfiguration config, ILogger<RabbitMqPublisher> logger)
+        public RabbitMqPublisher(IConfiguration config, ILogger<RabbitMqPublisher> logger,IRabbitMqConnection connection)
         {
             _config = config;
             _logger = logger;
+            _connection = connection;
         }
 
         public async Task<bool> PublishAsync(SubmissionProcessingRequested message)
         {
             try
             {
-                var factory = new ConnectionFactory()
-                {
-                    HostName = _config["RabbitMq:Host"],
-                    Port = int.Parse(_config["RabbitMq:Port"]!),
-                    UserName = _config["RabbitMq:UserName"],
-                    Password = _config["RabbitMq:Password"],
-                    VirtualHost = _config["RabbitMq:VirtualHost"]
-                };
-
-                await using var connection = await factory.CreateConnectionAsync();
-                await using var channel = await connection.CreateChannelAsync();
+                
+                var channel = await _connection.GetConnection().CreateChannelAsync();
 
                 var queueName = _config["RabbitMq:QueueName"]!;
 
