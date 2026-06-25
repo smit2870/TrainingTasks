@@ -24,44 +24,37 @@ namespace TrainingDirectory.Api.Clients
             _httpClient.DefaultRequestHeaders.Remove("X-Correlation-Id");
             _httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", correlationId);
 
-            for (int attempt = 1; attempt <= 3; attempt++)
+            try
             {
-                try
+                var response = await _httpClient.GetAsync($"/api/trainees/{id}", cancellationToken);
+
+                // --------------- Handling failure 
+                if (!response.IsSuccessStatusCode)
                 {
-                    var response = await _httpClient.GetAsync($"/api/trainees/{id}",cancellationToken);
+                    var body = await response.Content.ReadAsStringAsync();
 
-                    // ---------------  Handling failure 
+                    _logger.LogWarning(" *** Request failed. Status: {Status}, Body: {Body}",response.StatusCode, body);
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var body = await response.Content.ReadAsStringAsync();
-
-                        _logger.LogWarning(" ***  Attempt {Attempt} failed. Status: {Status}, Body: {Body}",attempt,response.StatusCode,body);
-
-                        // ---------------- Do NOT retry for client errors
-                        if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
-                            return null;
-                    }
-                    else
-                    {
-                        return await response.Content.ReadFromJsonAsync<TraineeDto>(cancellationToken: cancellationToken);
-                    }
+                    // ---------------- Do NOT retry for client errors
+                    if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
+                        return null;
                 }
-                catch (TaskCanceledException)
+                else
                 {
-                    _logger.LogWarning(" ***  Request timed out (Attempt {Attempt})", attempt);
+                    return await response.Content.ReadFromJsonAsync<TraineeDto>(cancellationToken: cancellationToken);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, " ***  Error calling TaskManagement API (Attempt {Attempt})", attempt);
-                }
-
-                // -----------------  Retry delay
-                await Task.Delay(300, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                _logger.LogWarning(" *** Request timed out");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, " *** Error calling TaskManagement API");
             }
 
-            // ------------------  Fallback
-            _logger.LogError(" ***  All retry attempts failed for traineeId={Id}", id);
+            // ------------------ Fallback
+            _logger.LogError(" *** Request failed for traineeId={Id}", id);
 
             return new TraineeDto
             {
@@ -72,6 +65,7 @@ namespace TrainingDirectory.Api.Clients
                 TechStack = "N/A",
                 Status = "ServiceDown"
             };
+
         }
 
     }
