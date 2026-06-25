@@ -22,7 +22,7 @@ builder.Services.AddHttpClient<ITaskManagementClient, TaskManagementClient>(clie
 {
     client.BaseAddress = new Uri("http://localhost:5153");
     client.Timeout = TimeSpan.FromSeconds(5);
-});
+}).AddStandardResilienceHandler();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
