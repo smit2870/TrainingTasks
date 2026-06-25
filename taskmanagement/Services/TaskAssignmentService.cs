@@ -72,7 +72,7 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<TaskAssignmentResponseDto?> GetById(int id)
+        public async Task<TaskAssignmentResponseDto?> GetById(int id, int currentUserId, string role)
         {
             string cacheKey = $"task-assignment:{id}";
             try
@@ -87,6 +87,13 @@ namespace taskmanagement.Services
                 _logger.LogInformation("Cache MISS: {Key}", cacheKey); 
 
                 var assignment = await _context.TaskAssignment.FindAsync(id);
+
+                if (role == "Trainee" && assignment.TraineeId != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied");
+                    
+                if (role == "Mentor" && assignment.MentorId != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied");
+
                 var dto = MapToDto(assignment);
                 await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(60));
                 return dto;

@@ -5,6 +5,7 @@ using taskmanagement.Models.DTOs.TaskAssignment;
 using taskmanagement.Models.Entities;
 using taskmanagement.Models.Enums;
 using taskmanagement.Services;
+using System.Security.Claims;
 
 namespace taskmanagement.Controllers
 {
@@ -52,7 +53,15 @@ namespace taskmanagement.Controllers
         {
             try
             {
-                var entity = await _service.GetById(id);
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var role = User.FindFirst(ClaimTypes.Role)?.Value;
+                
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || string.IsNullOrEmpty(role))
+                {
+                    return Unauthorized("Invalid user token");
+                }
+
+                var entity = await _service.GetById(id, userId, role!);
 
                 if (entity == null)
                     return NotFound($"TaskAssignment not found with Id={id}");

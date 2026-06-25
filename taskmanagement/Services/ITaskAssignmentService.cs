@@ -9,7 +9,7 @@ namespace taskmanagement.Services
     {
         Task<PagedResponse<TaskAssignment>> GetAll(int? traineeId, int? mentorId, TaskAssignmentStatus? status, int pageNumber, int pageSize);
 
-        Task<TaskAssignmentResponseDto?> GetById(int id);
+        Task<TaskAssignmentResponseDto?> GetById(int id, int currentUserId, string role);
 
         Task<TaskAssignment> Create(CreateTaskAssignmentDto dto);
 

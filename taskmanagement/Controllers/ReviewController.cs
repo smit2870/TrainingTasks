@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using taskmanagement.Services;
 using taskmanagement.Models.DTOs.Review;
-
+using System.Security.Claims;
 
 namespace taskmanagement.Controllers
 {
@@ -49,7 +49,15 @@ namespace taskmanagement.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _service.GetById(id);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || string.IsNullOrEmpty(role))
+            {
+                return Unauthorized("Invalid user token");
+            }
+
+            var result = await _service.GetById(id, userId, role!);
 
             if (result == null)
                 return NotFound(new {message = "Review not found."});

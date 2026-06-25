@@ -20,8 +20,13 @@ namespace taskmanagement.Services
             var assignment = await _context.TaskAssignment.FindAsync(submission.TaskAssignmentId);
             if (assignment == null)
                 throw new Exception("Assignment not found");
+            
+            if (role == "Mentor" && userId != assignment.MentorId)
+            {
+                throw new UnauthorizedAccessException("Access denied");
+            }
 
-            if (role != "Admin" && userId != assignment.TraineeId)
+            if (role == "Trainee" && userId != assignment.TraineeId)
             {
                 throw new UnauthorizedAccessException("Access denied");
             }
