@@ -59,14 +59,6 @@ public class SubmissionProcessingService : ISubmissionProcessingService
             if (file == null)
                 throw new Exception("Submission file not found");
 
-            //  For checking the dlq -------------------------------------------------------------------
-            
-            if (file.OriginalFileName == "9mb.pdf")
-            {
-                _logger.LogWarning("-------------------  Simulated failure for hello.pdf");
-                throw new Exception("-------------------  Simulated processing failure for hello.pdf");
-            }
-
             if (!await _storage.ExistsAsync(file.StorageName))
                 throw new Exception("File missing in storage");
 

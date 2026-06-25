@@ -61,11 +61,18 @@ namespace taskmanagement.Services
             }
         }
 
-        public async Task<Review?> GetById(int id)
+        public async Task<Review?> GetById(int id, int currentUserId, string role)
         {
             try
             {
                 var review = await _context.Review.FindAsync(id);
+                
+                if (review == null)
+                    return null;
+
+                if (role == "Mentor" && review.MentorId != currentUserId)
+                    throw new UnauthorizedAccessException("Access denied");
+
                 return review;
             }
             catch (Exception e)

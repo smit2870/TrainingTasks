@@ -99,7 +99,6 @@ public class Worker : BackgroundService
 
                 var processor = scope.ServiceProvider
                     .GetRequiredService<ISubmissionProcessingService>();
-
                 await processor.ProcessAsync(message, stoppingToken);
 
                 await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
