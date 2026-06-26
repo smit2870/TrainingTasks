@@ -130,6 +130,27 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// HealthCheck
+
+builder.Services.AddHealthChecks()
+    .AddMySql(
+        connectionString, name: "mysql")
+    .AddRedis(
+        builder.Configuration["Redis:ConnectionString"],
+        name: "redis")
+    .AddRabbitMQ(sp =>
+        {
+            var factory = new RabbitMQ.Client.ConnectionFactory
+            {
+                HostName = builder.Configuration["RabbitMq:Host"],
+                Port = int.Parse(builder.Configuration["RabbitMq:Port"]!),
+                UserName = builder.Configuration["RabbitMq:Username"],
+                Password = builder.Configuration["RabbitMq:Password"],
+                VirtualHost = builder.Configuration["RabbitMq:VirtualHost"]
+            };
+
+            return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+        }, name: "rabbitmq");
 
 // Services
 builder.Services.AddScoped<PasswordService>();
