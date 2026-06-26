@@ -46,6 +46,11 @@ namespace taskmanagement.Services
                     Persistent = true
                 };
 
+                using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
+                {
+                    _logger.LogInformation("Publishing message {MessageId} -- CorrelationId: {CorrelationId}", message.MessageId, message.CorrelationId);
+                }
+
                 await channel.BasicPublishAsync(
                     exchange: "",
                     routingKey: queueName,
@@ -53,6 +58,8 @@ namespace taskmanagement.Services
                     basicProperties: props,
                     body: body
                 );
+
+                _logger.LogInformation("Message published successfully {MessageId}  -- CorrelationId: {CorrelationId}", message.MessageId, message.CorrelationId);
 
                 return true;
             }

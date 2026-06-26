@@ -88,46 +88,55 @@ public class Worker : BackgroundService
             {
                 var json = Encoding.UTF8.GetString(ea.Body.ToArray());
 
-                _logger.LogInformation("  ---  Message received: {Json}", json);
-
                 message = JsonSerializer.Deserialize<SubmissionProcessingRequested>(json);
 
                 if (message == null)
                     throw new Exception("Invalid message");
 
-                using var scope = _scopeFactory.CreateScope();
+                using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
+                {
+                    _logger.LogInformation(" ***  Message received: {MessageId} -- CorrelationId: {CorrelationId}", message.MessageId, message.CorrelationId);
 
-                var processor = scope.ServiceProvider
-                    .GetRequiredService<ISubmissionProcessingService>();
-                await processor.ProcessAsync(message, stoppingToken);
+                    using var scope = _scopeFactory.CreateScope();
 
-                await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+                    var processor = scope.ServiceProvider
+                        .GetRequiredService<ISubmissionProcessingService>();
 
-                _logger.LogInformation("  ----  Processed message {MessageId}", message.MessageId);
+                    await processor.ProcessAsync(message, stoppingToken);
+
+                    await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+
+                    _logger.LogInformation(" ***  Processed message {MessageId}  -- CorrelationId: {CorrelationId}", message.MessageId, message.CorrelationId);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, " ***  Processing failed");
-
-                if (_channel != null)
+                using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    _logger.LogError(ex, "Processing failed  -- CorrelationId: {CorrelationId}",message.CorrelationId);
 
-                    var job = await db.ProcessingJobs
-                        .FirstOrDefaultAsync(x => x.MessageId == message!.MessageId);
+                    if (_channel != null)
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                    bool shouldRetry = job != null && job.Attempts < 3;
+                        var job = await db.ProcessingJobs
+                            .FirstOrDefaultAsync(x => x.MessageId == message!.MessageId);
 
-                    _logger.LogWarning("  ****  Retry decision for --- MsgId: {MsgId}, Attempt: {Attempt}, Retry: {Retry}",message?.MessageId, job?.Attempts, shouldRetry);
+                        bool shouldRetry = job != null && job.Attempts < 3;
 
-                    await _channel.BasicNackAsync(
-                        ea.DeliveryTag,
-                        false,
-                        requeue: shouldRetry,
-                        stoppingToken
-                    );
+                        _logger.LogWarning(
+                            "Retry decision | MsgId: {MsgId}, Attempt: {Attempt}, Retry: {Retry}",
+                            message?.MessageId, job?.Attempts, shouldRetry
+                        );
 
+                        await _channel.BasicNackAsync(
+                            ea.DeliveryTag,
+                            false,
+                            requeue: shouldRetry,
+                            stoppingToken
+                        );
+                    }
                 }
             }
         };

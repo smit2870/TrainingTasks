@@ -17,8 +17,11 @@ namespace taskmanagement.Services
         private readonly ICacheService _cache;
         private readonly IAuthorizationService _authService;
         private readonly IRabbitMqPublisher _publisher;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, FileValidator validator, ICacheService cache, IAuthorizationService authorization, IRabbitMqPublisher publisher)
+        public SubmissionService(AppDbContext context, ILogger<SubmissionService> logger, IFileStorageService storage, 
+                FileValidator validator, ICacheService cache, IAuthorizationService authorization, IRabbitMqPublisher publisher, 
+                IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _logger = logger;
@@ -27,6 +30,7 @@ namespace taskmanagement.Services
             _cache = cache;
             _authService = authorization;
             _publisher = publisher;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<Submission> CreateSubmission(CreateSubmissionDto dto)
@@ -178,10 +182,12 @@ namespace taskmanagement.Services
             _context.SubmissionFiles.Add(entity);
             await _context.SaveChangesAsync();
 
+            var correlationId = _httpContextAccessor.HttpContext?.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+
             var message = new SubmissionProcessingRequested
             {
                 MessageId = Guid.NewGuid(),
-                CorrelationId = Guid.NewGuid(),
+                CorrelationId = Guid.Parse(correlationId),
                 SubmissionId = submissionId,
                 FileId = entity.Id,
                 RequestedAt = DateTime.UtcNow
@@ -209,7 +215,10 @@ namespace taskmanagement.Services
                 throw new Exception("Failed to enqueue processing job");
             }
 
-            _logger.LogInformation("Queued processing | MsgId: {MsgId}, SubId: {SubId}, FileId: {FileId}",message.MessageId,submissionId,entity.Id);
+            using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
+            {    
+                _logger.LogInformation("Queued processing - MsgId: {MsgId}, SubId: {SubId}, FileId: {FileId}, --  CorrelationId: {CorrelationId}",message.MessageId, submissionId, entity.Id, correlationId);
+            }
 
             await _cache.RemoveAsync($"submission:{submissionId}");
             return entity;
