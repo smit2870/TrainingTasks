@@ -21,9 +21,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 
+var taskManagementBaseUrl =
+    builder.Configuration["TaskManagementApi:BaseUrl"]
+    ?? "http://taskmanagement-api:5153";
+
 builder.Services.AddHttpClient<ITaskManagementClient, TaskManagementClient>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5153");
+    client.BaseAddress = new Uri(taskManagementBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(5);
 })
 .AddPolicyHandler(HttpPolicyExtensions

@@ -21,10 +21,22 @@ var dbName = Environment.GetEnvironmentVariable("DB_NAME");
 var dbUser = Environment.GetEnvironmentVariable("DB_USER");
 var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
-var connectionString = $"server={dbHost};port={dbPort};database={dbName};user={dbUser};password={dbPassword};";
+var connectionString =
+    $"server={dbHost};" +
+    $"port={dbPort};" +
+    $"database={dbName};" +
+    $"user={dbUser};" +
+    $"password={dbPassword};" +
+    $"SslMode=None;" +
+    $"AllowPublicKeyRetrieval=True;" +
+    $"Connection Timeout=30;";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString),
+        mysqlOptions => mysqlOptions.MigrationsAssembly("TaskManagement.Shared")
+    ));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -178,6 +190,11 @@ builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {

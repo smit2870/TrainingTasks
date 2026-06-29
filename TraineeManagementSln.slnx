@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="SubmissionProcessor/SubmissionProcessor.csproj" />
+  <Project Path="TaskManagement.Shared/TaskManagement.Shared.csproj" />
   <Project Path="taskmanagement/taskmanagement.csproj" />
   <Project Path="TrainingDirectory.Api/TrainingDirectory.Api.csproj" />
 </Solution>
