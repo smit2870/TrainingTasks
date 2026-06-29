@@ -1,0 +1,192 @@
+services:
+  taskmanagement-api:
+    build:
+      context: .
+      dockerfile: ./taskmanagement/Dockerfile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        REGION: ${REGION}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+    container_name: taskmanagement-api
+    ports:
+      - "5153:5153"
+
+    volumes:
+      - task_storage:/App/storage
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      JWT_KEY: ${JWT_KEY}
+
+      FileStorage__RootPath: /App/storage
+
+      Redis__ConnectionString: redis:6379
+
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: rmquser
+      RabbitMq__Password: rmqpass
+      RabbitMq__VirtualHost: /
+      RabbitMq__QueueName: submission-processing
+
+      ASPNETCORE_URLS: http://+:5153
+      ASPNETCORE_ENVIRONMENT: Development
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  submission-processor:
+    build:
+      context: .
+      dockerfile: ./SubmissionProcessor/Dockerfile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        REGION: ${REGION}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+    container_name: submission-processor
+
+    volumes:
+      - task_storage:/App/storage
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      FileStorage__RootPath: /App/storage
+
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: rmquser
+      RabbitMq__Password: rmqpass
+      RabbitMq__VirtualHost: /
+      RabbitMq__QueueName: submission-processing
+
+      Redis__ConnectionString: redis:6379
+
+      ASPNETCORE_ENVIRONMENT: Development
+
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  trainingdirectory-api:
+    build:
+      context: .
+      dockerfile: ./TrainingDirectory.Api/Dockerfile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        REGION: ${REGION}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+    container_name: trainingdirectory-api
+
+    ports:
+      - "5200:5200"
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      ASPNETCORE_URLS: http://+:5200
+      ASPNETCORE_ENVIRONMENT: Development
+      TaskManagementApi__BaseUrl: http://taskmanagement-api:5153
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      taskmanagement-api:    
+        condition: service_started
+
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  mysql:
+    image: ${MYSQL_IMAGE}
+    container_name: mysql-db
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - app-network
+
+  redis:
+    image: ${REDIS_IMAGE}
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE}
+    container_name: rabbitmq
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: rmquser
+      RABBITMQ_DEFAULT_PASS: rmqpass
+      RABBITMQ_DEFAULT_VHOST: /
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
+  task_storage:
+
+networks:
+  app-network:
