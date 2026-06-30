@@ -167,61 +167,83 @@ namespace taskmanagement.Services
             using var fs = file.OpenReadStream();
             var hash = Convert.ToHexString(await sha256.ComputeHashAsync(fs));
 
-            var entity = new SubmissionFile
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                SubmissionId = submissionId,
-                OriginalFileName = file.FileName,
-                StorageName = storageName,
-                ContentType = file.ContentType,
-                Size = file.Length,
-                Checksum = hash,
-                UploadedBy = userName,
-                UploadedAt = DateTime.UtcNow
-            };
+                var entity = new SubmissionFile
+                {
+                    SubmissionId = submissionId,
+                    OriginalFileName = file.FileName,
+                    StorageName = storageName,
+                    ContentType = file.ContentType,
+                    Size = file.Length,
+                    Checksum = hash,
+                    UploadedBy = userName,
+                    UploadedAt = DateTime.UtcNow
+                };
 
-            _context.SubmissionFiles.Add(entity);
-            await _context.SaveChangesAsync();
+                _context.SubmissionFiles.Add(entity);
+                await _context.SaveChangesAsync();
 
-            var correlationId = _httpContextAccessor.HttpContext?.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
+                var correlationId = _httpContextAccessor.HttpContext?.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
 
-            var message = new SubmissionProcessingRequested
-            {
-                MessageId = Guid.NewGuid(),
-                CorrelationId = Guid.Parse(correlationId),
-                SubmissionId = submissionId,
-                FileId = entity.Id,
-                RequestedAt = DateTime.UtcNow
-            };
+                var message = new SubmissionProcessingRequested
+                {
+                    MessageId = Guid.NewGuid(),
+                    CorrelationId = Guid.Parse(correlationId),
+                    SubmissionId = submissionId,
+                    FileId = entity.Id,
+                    RequestedAt = DateTime.UtcNow
+                };
 
-            var processingJobs = new ProcessingJob
-            {
-                MessageId = message.MessageId,
-                CorrelationId = message.CorrelationId,
-                SubmissionId = submissionId,
-                FileId = entity.Id,
-                Status = JobStatus.Queued,
-                Attempts = 0,
-                CreatedAt = DateTime.UtcNow
-            };
+                var processingJobs = new ProcessingJob
+                {
+                    MessageId = message.MessageId,
+                    CorrelationId = message.CorrelationId,
+                    SubmissionId = submissionId,
+                    FileId = entity.Id,
+                    Status = JobStatus.Queued,
+                    Attempts = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            _context.ProcessingJobs.Add(processingJobs);
-            await _context.SaveChangesAsync();
+                _context.ProcessingJobs.Add(processingJobs);
+                await _context.SaveChangesAsync();
 
-            var published = await _publisher.PublishAsync(message);
+                var published = await _publisher.PublishAsync(message);
 
-            if (!published)
-            {
-                _logger.LogWarning("Message NOT published for SubmissionId: {SubmissionId}", submissionId);
-                throw new Exception("Failed to enqueue processing job");
+                if (!published)
+                {
+                    _logger.LogWarning("Message NOT published for SubmissionId: {SubmissionId}", submissionId);
+                    throw new Exception("Failed to enqueue processing job");
+                }
+
+                await transaction.CommitAsync();
+
+                using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
+                {    
+                    _logger.LogInformation("Queued processing - MsgId: {MsgId}, SubId: {SubId}, FileId: {FileId}, --  CorrelationId: {CorrelationId}",message.MessageId, submissionId, entity.Id, correlationId);
+                }
+
+                await _cache.RemoveAsync($"submission:{submissionId}");
+                return entity;
             }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "UploadFile failed. Rolling back transaction.");
 
-            using (_logger.BeginScope("CorrelationId:{CorrelationId}", message.CorrelationId))
-            {    
-                _logger.LogInformation("Queued processing - MsgId: {MsgId}, SubId: {SubId}, FileId: {FileId}, --  CorrelationId: {CorrelationId}",message.MessageId, submissionId, entity.Id, correlationId);
+                try      
+                {            
+                    await _storage.DeleteAsync(storageName);
+                }        
+                catch (Exception cleanupEx)        
+                {            
+                    _logger.LogError(cleanupEx, "Failed to cleanup uploaded file after rollback");        
+                }        
+                throw new Exception(" *** Processing temporarily unavailable. Please try again.");
             }
-
-            await _cache.RemoveAsync($"submission:{submissionId}");
-            return entity;
         }
 
         public async Task<(Stream stream, SubmissionFile file)> DownloadFile(int fileId, int userId, string role)
