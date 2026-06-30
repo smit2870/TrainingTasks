@@ -24,28 +24,39 @@ namespace taskmanagement.Middlewares
             {
                 _logger.LogError(ex, "Unhandled exception occurred");
 
-                await HandleExceptionAsync(context);
+                await HandleExceptionAsync(context,ex);
             }
         }
 
-        private static Task HandleExceptionAsync(HttpContext context)
+        private static Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
             
             context.Response.ContentType = "application/json";
 
-            int statusCode = context.Response.StatusCode;
+            int statusCode;
+            object response;
 
-            if (statusCode == 0)
+            if (ex is UnauthorizedAccessException)
+            {
+                statusCode = StatusCodes.Status403Forbidden;
+                response = new { message = ex.Message };
+            }
+            else if (ex is KeyNotFoundException)
+            {
+                statusCode = StatusCodes.Status404NotFound;
+                response = new { message = ex.Message };
+            }
+            else if (ex is ArgumentException)
+            {
+                statusCode = StatusCodes.Status400BadRequest;
+                response = new { message = ex.Message };
+            }
+            else
+            {
                 statusCode = StatusCodes.Status500InternalServerError;
+                response = new { message = "An unexpected error occurred. Please try again later." };
+            }
 
-            var response = statusCode switch
-                {
-                    400 => new { message = "Bad request." },
-                    401 => new { message = "Unauthorized." },
-                    404 => new { message = "Resource not found." },
-                    _ => new { message = "An unexpected error occurred. Please try again later." }
-                };
-            
             context.Response.StatusCode = statusCode;
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(response));
