@@ -105,6 +105,13 @@ RABBITMQ_IMAGE=<RABBITMQIMAGE>
 
 JWT_KEY=<Secret-key>
 
+RABBITMQ_HOST=<host>
+RABBITMQ_PORT=<PORT>
+RABBITMQ_VHOST=<HOST>
+RABBITMQ_USERNAME=<USERNAME>
+RABBITMQ_PASSWORD=<PASSWORD>
+RABBITMQ_QUEUE_NAME=<QUEUE_NAME>
+
 DOMAIN_OWNER=<your-domain-owner>
 REGION=<your-region>
 NUGET_REPO_NAME=<your-nuget-repository-name>
@@ -140,10 +147,6 @@ docker compose down
 | MySQL | `mysql-db` | `localhost:3306` |
 | Redis | `redis` | `localhost:6379` |
 
-RabbitMQ login:
-```
-Username: rmquser
-Password: rmqpass
 ```
 ---
 
