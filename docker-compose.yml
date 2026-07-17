@@ -30,8 +30,8 @@ services:
 
       RabbitMq__Host: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__Username: rmquser
-      RabbitMq__Password: rmqpass
+      RabbitMq__Username: ${RABBITMQ_USERNAME} 
+      RabbitMq__Password: ${RABBITMQ_PASSWORD} 
       RabbitMq__VirtualHost: /
       RabbitMq__QueueName: submission-processing
 
@@ -75,8 +75,8 @@ services:
 
       RabbitMq__Host: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__Username: rmquser
-      RabbitMq__Password: rmqpass
+      RabbitMq__Username: ${RABBITMQ_USERNAME} 
+      RabbitMq__Password: ${RABBITMQ_PASSWORD} 
       RabbitMq__VirtualHost: /
       RabbitMq__QueueName: submission-processing
 
@@ -172,8 +172,8 @@ services:
       - "15672:15672"
 
     environment:
-      RABBITMQ_DEFAULT_USER: rmquser
-      RABBITMQ_DEFAULT_PASS: rmqpass
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: /
 
     volumes:
