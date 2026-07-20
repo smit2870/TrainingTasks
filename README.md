@@ -81,6 +81,8 @@ The solution contains:
 │
 ├── docker-compose.yml
 ├── .dockerignore
+├── .gitignore
+├── README.md
 └── TraineeManagementSln.slnx
 ```
 
@@ -147,8 +149,6 @@ docker compose down
 | MySQL | `mysql-db` | `localhost:3306` |
 | Redis | `redis` | `localhost:6379` |
 
-```
----
 
 ---
 
@@ -191,6 +191,8 @@ docker exec -it rabbitmq rabbitmqctl list_queues name messages messages_ready me
 --- 
 
 ## API List
+
+### Taskmanagement API [ http://localhost:5153 ]
 
 - Health
 ```http
@@ -266,6 +268,16 @@ POST   /api/users
 PUT    /api/users/{id} 
 DELETE /api/users/{id} 
 ```
+
+### Training Directory API [ http://localhost:5200 ]
+
+- Internal Trainee
+
+``` http
+GET    /internal/trainees/trainee/{id} 
+```
+
+---
 
 ## Swagger URLS
 
