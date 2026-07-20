@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TrainingDirectory.Api.Models;
 
@@ -14,47 +15,58 @@ namespace TrainingDirectory.Api.Clients
             _logger = logger;
         }
 
-        public async Task<TraineeDto?> GetTraineeById(int id,string token, CancellationToken cancellationToken = default)
+        public async Task<TraineeDto?> GetTraineeById(int id, string token, CancellationToken cancellationToken = default)
         {
-            
-            _httpClient.DefaultRequestHeaders.Remove("Authorization");
-            _httpClient.DefaultRequestHeaders.Add("Authorization", token);
-
             var correlationId = Guid.NewGuid().ToString();
-            _httpClient.DefaultRequestHeaders.Remove("X-Correlation-Id");
-            _httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", correlationId);
 
             try
             {
-                var response = await _httpClient.GetAsync($"/api/trainees/{id}", cancellationToken);
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/trainees/{id}");
 
-                // --------------- Handling failure 
+                request.Headers.Add("X-Correlation-Id", correlationId);
+
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    var cleanToken = token;
+
+                    if (cleanToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        cleanToken = cleanToken["Bearer ".Length..].Trim();
+                    }
+
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cleanToken);
+                }
+
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
+
                 if (!response.IsSuccessStatusCode)
                 {
-                    var body = await response.Content.ReadAsStringAsync();
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
-                    _logger.LogWarning(" *** Request failed. Status: {Status}, Body: {Body}",response.StatusCode, body);
+                    _logger.LogWarning("Request failed. Status: {Status}, Body: {Body}, CorrelationId: {CorrelationId}", response.StatusCode, body, correlationId);
 
                     // ---------------- Do NOT retry for client errors
                     if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
+                    {
                         return null;
+                    }
                 }
                 else
                 {
                     return await response.Content.ReadFromJsonAsync<TraineeDto>(cancellationToken: cancellationToken);
                 }
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
-                _logger.LogWarning(" *** Request timed out");
+                _logger.LogWarning(ex, "Request timed out for traineeId={Id}, CorrelationId={CorrelationId}", id, correlationId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, " *** Error calling TaskManagement API");
+                _logger.LogError(ex, "Error calling TaskManagement API for traineeId={Id}, CorrelationId={CorrelationId}", id, correlationId);
             }
 
             // ------------------ Fallback
-            _logger.LogError(" *** Request failed for traineeId={Id}", id);
+            _logger.LogError("Request failed for traineeId={Id}, CorrelationId={CorrelationId}", id, correlationId);
 
             return new TraineeDto
             {
