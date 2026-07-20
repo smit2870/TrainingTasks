@@ -1,11 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TrainingDirectory.Api.Models;
 using TrainingDirectory.Api.Clients;
 
 namespace TrainingDirectory.Api.Controllers
 {
     [ApiController]
     [Route("internal/trainees")]
+    [Authorize(Roles = "Admin,Mentor")]
     public class InternalTraineeController : ControllerBase
     {
         private readonly ITaskManagementClient _client;
@@ -18,12 +19,19 @@ namespace TrainingDirectory.Api.Controllers
         [HttpGet("trainee/{id}")]
         public async Task<IActionResult> GetTrainee(int id, CancellationToken cancellationToken)
         {
-            var token = Request.Headers["Authorization"].ToString();
+            var token = Request.Headers.Authorization.ToString();
 
-            var trainee = await _client.GetTraineeById(id,token,cancellationToken);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Unauthorized(new { message = "Authorization token is missing" });
+            }
+
+            var trainee = await _client.GetTraineeById(id, token, cancellationToken);
 
             if (trainee == null)
-                return NotFound(new { message = "Trainee not found or service unavailable" });
+            {
+                return NotFound(new { message = "Trainee not found or access denied" });
+            }
 
             var result = new
             {
@@ -36,6 +44,5 @@ namespace TrainingDirectory.Api.Controllers
 
             return Ok(result);
         }
-
     }
 }
