@@ -115,6 +115,8 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
 
+      JWT_KEY: ${JWT_KEY}
+
       ASPNETCORE_URLS: http://+:5200
       ASPNETCORE_ENVIRONMENT: Development
       TaskManagementApi__BaseUrl: http://taskmanagement-api:5153
